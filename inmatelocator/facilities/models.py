@@ -43,6 +43,7 @@ class Facility(models.Model):
 
     type = models.ForeignKey(FacilityType, null=True)
     administrator = models.ForeignKey(FacilityAdministrator, null=True)
+    operator = models.ForeignKey(FacilityOperator, null=True)
 
     provenance = models.CharField(max_length=255, verbose_name="data source")
     provenance_url = models.CharField(max_length=255, verbose_name="data source URL")
