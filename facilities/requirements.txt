@@ -1,0 +1,6 @@
+scrapy
+addresscleaner
+fuzzywuzzy
+probablepeople
+usaddress
+python-levenshtein
