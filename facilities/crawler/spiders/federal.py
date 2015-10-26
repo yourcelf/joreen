@@ -6,6 +6,7 @@ import re
 import datetime
 from urlparse import urljoin
 from addresscleaner import parse_address, format_address
+import logging
 
 class FederalSpider(scrapy.Spider):
     name = "federal"
@@ -66,9 +67,10 @@ class FederalSpider(scrapy.Spider):
             item['state'] = address['state']
             item['zip'] = address['zipCode']
         else:
-            raise Exception(
-                "Inmate Mail/Parcels not found for {}, available types: {}".format(
+            logging.warning(
+                "Inmate Mail/Parcels address not found for federal institution {}, available types: {}".format(
                     item['identifier'], addresses_by_type.keys()
                 )
             )
+            item['state'] = ''
         return item

@@ -2,8 +2,8 @@ import re
 import requests
 import lxml.html
 
+from stateparsers.states import LookupResult, normalize_name
 from facilities.models import Facility
-from states import LookupResult, normalize_name
 
 def normalize_facility_name(term):
     return normalize_name(term)
@@ -127,10 +127,12 @@ def search(**kwargs):
                 facilities=facilities,
 
                 # extra
-                sex="".join(row.xpath(".//td[@headers='sex']//text()")).strip(),
-                date_of_birth="".join(row.xpath(".//td[@headers='dob']//text()")).strip(),
-                status="".join(row.xpath(".//td[@headers='stat']//text()")).strip(),
-                race="".join(row.xpath(".//td[@headers='race']//text()")).strip(),
+                extra=dict(
+                    sex="".join(row.xpath(".//td[@headers='sex']//text()")).strip(),
+                    date_of_birth="".join(row.xpath(".//td[@headers='dob']//text()")).strip(),
+                    status="".join(row.xpath(".//td[@headers='stat']//text()")).strip(),
+                    race="".join(row.xpath(".//td[@headers='race']//text()")).strip(),
+                )
             )
             results.append(result)
     return {'state': 'Florida', 'results': results, 'errors': errors, 'url': base}

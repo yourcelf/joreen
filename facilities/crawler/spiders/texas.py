@@ -23,6 +23,9 @@ class TexasSpider(scrapy.Spider):
         if "Texas" in name:
             return []
 
+        if name == "Hospital Galveston":
+            return ["Galveston"]
+
         def add_suffixes(alternate_names):
             alts = []
             for name in alternate_names:
@@ -41,10 +44,13 @@ class TexasSpider(scrapy.Spider):
             parsed = {'Surname': 'Daniel', 'GivenName': 'Price'}
         elif name == "O.L. Luther":
             parsed = {'Surname': 'Luther', 'FirstInitial': 'O', 'MiddleInitial': 'L'}
+        elif name == "Reverend C.A. Holliday":
+            parsed = {"PrefixOther": "Reverend", "FirstInitial": "C", "MiddleInitial": "A",
+                    "Surname": "Holliday"}
         else:
             parsed, ntype  = probablepeople.tag(name)
             if ntype != "Person":
-                raise Exception("Unexpected name type {} for {}".format(ntype, name))
+                raise Exception("probablepeople tagged an unexpected name type `{}` for `{}`".format(ntype, name))
 
         alts = set([name])
         if 'Surname' in parsed:

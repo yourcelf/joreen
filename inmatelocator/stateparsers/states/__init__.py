@@ -43,11 +43,11 @@ def fuzzy_match_address(address, choices):
         # City, org, address
         for key in ["city", "address1", "organization"]:
            v1 = address.get(key)
-            v2 = choice.get(key)
-            if v1 is not None and v2 is not None:
-                v1 = re.sub('[^a-z0-9 ]', '', v1.lower())
-                v2 = re.sub('[^a-z0-9 ]', '', v2.lower())
-                score.append(fuzz.ratio(v1, v2))
+           v2 = choice.get(key)
+           if v1 is not None and v2 is not None:
+               v1 = re.sub('[^a-z0-9 ]', '', v1.lower())
+               v2 = re.sub('[^a-z0-9 ]', '', v2.lower())
+               score.append(fuzz.ratio(v1, v2))
         if score:
             scores.append((sum(score) / float(len(score)), choice))
 

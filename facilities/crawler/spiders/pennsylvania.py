@@ -82,6 +82,7 @@ class PennsylvaniaSpider(scrapy.Spider):
     def make_ccc_item(self, lines, url):
         item = FacilityItem()
         item['identifier'] = ''
+        item['source'] = 'crawler'
         item['administrator'] = "Pennsylvania"
         item['url'] = url
         item['date'] = datetime.datetime.now().isoformat()
@@ -101,6 +102,7 @@ class PennsylvaniaSpider(scrapy.Spider):
     def make_doc_item(self, lines, url):
         item = FacilityItem()
         item['source'] = "crawler"
+        item['administrator'] = 'Pennsylvania'
         item['identifier'] = ''
         item['url'] = url
         item['date'] = datetime.datetime.now().isoformat()

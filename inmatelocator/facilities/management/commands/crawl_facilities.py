@@ -16,6 +16,8 @@ class Command(BaseCommand):
                 settings.SCRAPY_BIN,
                 'crawl',
                 state,
+                "--loglevel",
+                "WARNING",
                 "-t",
                 "json",
                 "-o",
@@ -40,7 +42,7 @@ class Command(BaseCommand):
                 facility.name = entry['organization']
                 facility.code = entry.get('identifier') or ''
                 for key in ("address1", "address2", "address3", "city", "zip", "phone"):
-                    setattr(facility, key, entry.get(key, ''))
+                    setattr(facility, key, entry.get(key) or '')
 
                 facility.provenance = entry.get("source")
                 facility.provenance_url = entry.get("url")

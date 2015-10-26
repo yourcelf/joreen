@@ -4,7 +4,7 @@ import json
 import time
 import requests
 
-from states import LookupResult
+from stateparsers.states import LookupResult
 from facilities.models import Facility
 
 def search(**kwargs):

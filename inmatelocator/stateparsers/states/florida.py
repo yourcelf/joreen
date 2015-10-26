@@ -2,9 +2,9 @@
 import re
 import requests
 import lxml.html
-from addresscleaner import format_address
 
-from states import LookupResult, normalize_name
+from stateparsers.states import LookupResult, normalize_name
+from facilities.models import Facility
 
 # Load facility data.
 
@@ -33,8 +33,6 @@ def normalize_facility_name(name):
     name = re.sub(r'\bci(\b|$)', "correctional institution", name)
     name = re.sub(r'\bcf(\b|$)', "correctional facility", name)
     return name
-
-facility_lookup = make_facility_lookup("florida", normalize_facility_name)
 
 def search(**kwargs):
     base = "http://www.dc.state.fl.us/ActiveInmates/search.asp"

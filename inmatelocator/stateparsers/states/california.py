@@ -5,7 +5,7 @@ import lxml.html
 
 from localflavor.us.us_states import STATES_NORMALIZED
 
-from states import LookupResult
+from stateparsers.states import LookupResult
 from facilities.models import Facility
 
 def search(**kwargs):

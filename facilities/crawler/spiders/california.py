@@ -17,7 +17,6 @@ import os
 import re
 import csv
 import scrapy
-import pprint
 from crawler.items import FacilityItem
 from crawler.utils import e
 
@@ -42,7 +41,6 @@ class CaliforniaSpider(scrapy.Spider):
         with open(MANUAL_DATA) as fh:
             reader = csv.reader(fh)
             for i,row in enumerate(reader):
-                print row
                 if i == 0:
                     columns = row
                 else:

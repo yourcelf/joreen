@@ -2,7 +2,7 @@ import re
 import requests
 import lxml.html
 
-from states import LookupResult, normalize_name
+from stateparsers.states import LookupResult, normalize_name
  
 texas_unit_type_re = re.compile(" (Unit|Complex|Transfer Facility|Prison|State Jail|Medical Facility|Geriatric Facility|Correctional (Center|Facility)|Treatment( Facility)?)$", re.I)
 
@@ -74,7 +74,6 @@ def search(**kwargs):
                 facilities = Facility.objects.fuzzy_lookup(
                     term=normalize_texas_name(unit_of_assignment),
                     administrator__name="Texas")
-                )
             else:
                 status = LookupResult.STATUS_UNKNOWN
                 facilities = None
