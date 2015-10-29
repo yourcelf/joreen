@@ -1,30 +1,115 @@
-class LookupResult(object):
+# -*- coding: utf-8 -*-
+import re
+import requests
+
+from stateparsers.models import FacilityNameResult, Facility
+from localflavor.us.us_states import STATES_NORMALIZED
+
+class LookupStatus(object):
     STATUS_INCARCERATED = "Incarcerated"
     STATUS_RELEASED = "Released"
     STATUS_UNKNOWN = "Unknown"
+
+class LookupResult(LookupStatus):
+
     def __init__(self,
             name,
             numbers,
             status,
+            raw_facility_name,
+            facility_url,
             facilities,
             search_url,
             result_url,
             extra):
         self.name = name
         self.numbers = numbers
+        self.status = status
         self.facilities = facilities
+        self.raw_facility_name = raw_facility_name
+        self.facility_url = facility_url
         self.search_url = search_url
         self.result_url = result_url
         self.extra = extra
 
-def normalize_name(name):
-    # Replace all but - and a-z with emptystring.
-    name = re.sub("[^-a-z ]", "", name.lower()).strip()
-    # Replace - with single space " "
-    name = re.sub("-", " ", name)
-    # Remove multiple spaces
-    name = re.sub("\s+", " ", name)
-    return name
+class BaseStateSearch(LookupStatus):
+
+    # Source URL to report to users
+    url = ""
+    # Name of the FacilityAdminsitrator we're searching, e.g. 'California'
+    administrator_name = ""
+    # List of lists of minimum allowed search terms
+    minimum_search_terms = [["last_name"], ["first_name"], ["number"]]
+
+    # All possible search terms.
+    _search_terms = set(["last_name", "first_name", "number"])
+
+    def __init__(self):
+        pass
+
+    def search(self, **kwargs):
+        self.session = requests.Session()
+        self.check_minimum_terms(kwargs)
+        self.errors = []
+        self.results = []
+        self.crawl(**kwargs)
+        for result in self.results:
+            if result.raw_facility_name:
+                FacilityNameResult.objects.log_name(
+                    self.administrator_name, result.raw_facility_name, result.facility_url)
+        return {'results': self.results, 'errors': self.errors,}
+
+    def add_result(self, **kwargs):
+        opts = {
+            'status': self.STATUS_UNKNOWN,
+            'raw_facility_name': '',
+            'facility_url': '',
+            'facilities': Facility.objects.none(),
+            'search_url': self.url,
+            'result_url': None,
+            'extra': None
+        }
+        opts.update(kwargs)
+        result = LookupResult(**opts)
+        self.results.append(result)
+        return result
+
+    def get_state(self, abbr):
+        abbr = re.sub("[^a-z ]", "", abbr.lower())
+        return STATES_NORMALIZED.get(abbr)
+
+    def crawl(self, **kwargs):
+        raise NotImplementedError
+
+    def check_minimum_terms(self, kwargs):
+        for minimum in self.minimum_search_terms:
+            for term in minimum:
+                if term not in kwargs:
+                    break
+            else:
+                return True
+        found_terms = [k for k in kwargs.keys() if k in self._search_terms]
+        raise MinimumTermsError(self.administrator_name, self.minimum_search_terms, found_terms)
+
+    @classmethod
+    def normalize_name(cls, name):
+        # Replace all but - and a-z with emptystring.
+        name = re.sub("[^-a-z ]", "", name.lower()).strip()
+        # Replace - with single space " "
+        name = re.sub("-", " ", name)
+        # Remove multiple spaces
+        name = re.sub("\s+", " ", name)
+        return name
+
+
+class MinimumTermsError(Exception):
+    def __init__(self, state, minimum_terms, found_terms):
+        self.state = state
+        self.minimum_terms = minimum_terms
+        super(MinimumTermsError, self).__init__(
+            "{} requires one of {}.  {} given.".format(state, minimum_terms, found_terms)
+        )
+
 
 def fuzzy_match_address(address, choices):
     scores = []

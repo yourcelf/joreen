@@ -11,7 +11,10 @@ class RemoveDuplicates(object):
         self.ids_seen = set()
 
     def process_item(self, item, spider):
-        ident = (item['identifier'], item['organization'], item['state'])
+        # California has same identifier, same name, same state, multiple
+        # addresses.  So we need address lines in our identifier.
+        ident = (item['identifier'], item['organization'], item['state'],
+                 item.get('address1') or '', item.get('address2') or '')
         if ident in self.ids_seen:
             raise DropItem("Duplicate item found: {}".format(ident))
         else:

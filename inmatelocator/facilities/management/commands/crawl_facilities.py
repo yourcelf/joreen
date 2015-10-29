@@ -29,23 +29,24 @@ class Command(BaseCommand):
             data = json.loads(stdout.decode("utf-8"))
 
             for entry in data:
-                lookup = {'state': entry['state']}
-                if entry.get('identifier'):
-                    lookup['code'] = entry['identifier']
-                else:
-                    lookup['name'] = entry['organization']
+                lookup = {
+                    'name': entry['organization'],
+                    'code': entry.get('identifier') or '',
+                    'address1': entry.get('address1') or '',
+                    'address2': entry.get('address2') or '',
+                    'address3': entry.get('address3') or '',
+                    'city': entry.get('city') or '',
+                    'state': entry.get('state') or ''
+                }
                 try:
                     facility = Facility.objects.get(**lookup)
                 except Facility.DoesNotExist:
                     facility = Facility(**lookup)
 
-                facility.name = entry['organization']
-                facility.code = entry.get('identifier') or ''
-                for key in ("address1", "address2", "address3", "city", "zip", "phone"):
-                    setattr(facility, key, entry.get(key) or '')
-
+                facility.phone = entry.get('phone') or ''
                 facility.provenance = entry.get("source")
                 facility.provenance_url = entry.get("url")
+                facility.general = entry.get('general') or False
 
                 if entry.get("type"):
                     facility.type = FacilityType.objects.get_or_create(name=entry['type'])[0]
@@ -55,7 +56,7 @@ class Command(BaseCommand):
 
                 if entry.get("operator"):
                     facility.operator = FacilityOperator.objects.get_or_create(
-                            name=entry['administrator'])[0]
+                            name=entry['operator'])[0]
 
                 facility.save()
                 for alt in entry.get("alternate_names", []):

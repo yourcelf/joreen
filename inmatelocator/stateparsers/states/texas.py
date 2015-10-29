@@ -2,7 +2,8 @@ import re
 import requests
 import lxml.html
 
-from stateparsers.states import LookupResult, normalize_name
+from facilities.models import Facility
+from stateparsers.states import BaseStateSearch
  
 texas_unit_type_re = re.compile(" (Unit|Complex|Transfer Facility|Prison|State Jail|Medical Facility|Geriatric Facility|Correctional (Center|Facility)|Treatment( Facility)?)$", re.I)
 
@@ -20,81 +21,90 @@ facility_name_overrides = {
     'ramsey i': 'W. F. Ramsey Unit',
     'west texas isf': 'West Texas Intermediate Sanction Facility',
     'west texas hosp': 'West Texas Intermediate Sanction Facility',
+    'alfred hughes': 'Alfred D. Hughes Unit',
+    'joe f gurney': 'Joe F. Gurney Transfer Facility',
+    'travis jail': 'Travis County State Jail',
+    'bill clements': 'William P. Clements Unit',
+    'mac stringfellow': 'A.M. "Mac" Stringfellow Unit',
 }
 
-def normalize_texas_name(name):
-    name = normalize_name(name)
-    if name in facility_name_overrides:
-        return normalize_name(facility_name_overrides[name])
-    return name 
+#   'texas': [["last_name", "first_name"], ["number"]],
 
-def search(**kwargs):
+class Search(BaseStateSearch):
+    administrator_name = "Texas"
+    minimum_search_terms = [["last_name", "first_name"], ["number"]]
     url = "http://offender.tdcj.state.tx.us/OffenderSearch/search.action"
 
-    # Fix number formatting
-    number = kwargs.get('number', '')
-    if number:
-        number_types = ("tdcj", "sid")
-        number = re.sub('[^0-9]', '', number)
-        number = "0" * (8 - len(number)) + number
-    else:
-        number_types = ("sid")
+    @classmethod
+    def normalize_name(cls, name):
+        norm = super(Search, cls).normalize_name(name)
+        if norm in facility_name_overrides:
+            return facility_name_overrides[norm]
+        return norm
 
-    results = []
-    errors = []
 
-    for number_type in number_types:
-        params = {
-            "page": "index",
-            "lastName": kwargs.get('last_name', ''),
-            "firstName": kwargs.get('first_name', ''),
-            "gender": "ALL",
-            "race": "ALL",
-            "btnSearch": "Search",
-        }
-        params[number_type] = number
-        res = requests.post(url, params)
+    def crawl(self, **kwargs):
+        # Fix number formatting
+        number = kwargs.get('number', '')
+        if number:
+            number_types = ("tdcj", "sid")
+            number = re.sub('[^0-9]', '', number)
+            number = "0" * (8 - len(number)) + number
+        else:
+            number_types = ("sid",)
 
-        root = lxml.html.fromstring(res.text)
-        rows = root.xpath('//table[@class="ws"]//tr')
-        for row in rows:
-            name = "".join(row.xpath('./td[1]/a/text()'))
-            if not name:
-                continue
+        results = []
+        errors = []
 
-            result_url = "http://offender.tdcj.state.tx.us" + "".join(row.xpath('./td[1]/a/@href')) 
-            numbers = {"tdcj_number": "".join(row.xpath('./td[2]/text()'))}
-            match = re.search("sid=([-0-9a-zA-Z]+)", result_url)
-            if match:
-                numbers['sid_number'] = match.group(1)
+        for number_type in number_types:
+            params = {
+                "page": "index",
+                "lastName": kwargs.get('last_name', ''),
+                "firstName": kwargs.get('first_name', ''),
+                "gender": "ALL",
+                "race": "ALL",
+                "btnSearch": "Search",
+            }
+            params[number_type] = number
+            res = self.session.post(self.url, params)
 
-            unit_of_assignment = "".join(row.xpath('./td[6]/text()'))
-            if unit_of_assignment:
-                status = LookupResult.STATUS_INCARCERATED
-                facilities = Facility.objects.fuzzy_lookup(
-                    term=normalize_texas_name(unit_of_assignment),
-                    administrator__name="Texas")
-            else:
-                status = LookupResult.STATUS_UNKNOWN
-                facilities = None
+            root = lxml.html.fromstring(res.text)
+            rows = root.xpath('//table[@class="ws"]//tr')
+            for row in rows:
+                name = "".join(row.xpath('./td[1]/a/text()'))
+                if not name:
+                    continue
 
-            result = LookupResult(
-                name=name,
-                numbers=numbers,
-                status=status,
-                facilities=facilities,
-                search_url=url,
-                result_url=result_url,
-                extra={
-                    'unit_of_assignment': unit_of_assingment,
-                    'race': "".join(row.xpath('./td[3]/text()')),
-                    'gender': "".join(row.xpath('./td[4]/text()')),
-                    'projected_release_date': "".join(row.xpath('./td[5]/text()')),
-                    'date_of_birth': "".join(row.xpath('./td[7]/text()')),
-                }
-            )
-            results.append(result)
+                result_url = "http://offender.tdcj.state.tx.us" + "".join(row.xpath('./td[1]/a/@href')) 
+                numbers = {"tdcj_number": "".join(row.xpath('./td[2]/text()'))}
+                match = re.search("sid=([-0-9a-zA-Z]+)", result_url)
+                if match:
+                    numbers['sid_number'] = match.group(1)
 
-        if results:
-            break
-    return {'state': 'Texas', 'results': results, 'errors': list(errors), 'url': url}
+                unit_of_assignment = "".join(row.xpath('./td[6]/text()'))
+                if unit_of_assignment:
+                    status = self.STATUS_INCARCERATED
+                    facilities = Facility.objects.filter(
+                            administrator__name="Texas",
+                            name__icontains=self.normalize_name(unit_of_assignment))
+                else:
+                    status = self.STATUS_UNKNOWN
+                    facilities = None
+
+                self.add_result(
+                    name=name,
+                    numbers=numbers,
+                    raw_facility_name=unit_of_assignment,
+                    result_url=result_url,
+                    facilities=facilities,
+                    extra={
+                        'unit_of_assignment': unit_of_assignment,
+                        'race': "".join(row.xpath('./td[3]/text()')),
+                        'gender': "".join(row.xpath('./td[4]/text()')),
+                        'projected_release_date': "".join(row.xpath('./td[5]/text()')),
+                        'date_of_birth': "".join(row.xpath('./td[7]/text()')),
+                    }
+                )
+
+            if self.results:
+                break

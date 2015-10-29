@@ -17,4 +17,5 @@ def search(state_name, **kwargs):
             "No search interface implemented for state `{}`".format(state_name)
         )
     module = name_map[state_name]
-    return module.search(**kwargs)
+    searcher = module.Search()
+    return searcher.search(**kwargs)

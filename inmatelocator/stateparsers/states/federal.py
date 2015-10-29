@@ -4,58 +4,60 @@ import json
 import time
 import requests
 
-from stateparsers.states import LookupResult
+from stateparsers.states import BaseStateSearch
 from facilities.models import Facility
 
-def search(**kwargs):
+class Search(BaseStateSearch):
     url = "http://www.bop.gov/PublicInfo/execute/inmateloc"
+    administrator_name = "Federal Bureau of Prisons"
+    minimum_search_terms = [["last_name", "first_name"], ["number"]]
 
-    searches = []
-    if kwargs.get('number'):
-        for numtype in ("IRN", "DCDC", "FBI", "INS"):
-            searches.append({"inmateNum": kwargs['number'], "inmateNumType": numtype})
-    else:
-        searches.append({"nameFirst": kwargs.get("first_name"), "nameLast": kwargs.get("last_name")})
+    def crawl(self, **kwargs):
 
-    results = []
-    errors = []
+        searches = []
+        if kwargs.get('number'):
+            for numtype in ("IRN", "DCDC", "FBI", "INS"):
+                searches.append({"inmateNum": kwargs['number'], "inmateNumType": numtype})
+        else:
+            searches.append({"nameFirst": kwargs.get("first_name"), "nameLast": kwargs.get("last_name")})
 
-    for i,search in enumerate(searches):
-        search['todo'] = 'query'
-        search['output'] = 'json'
-        res = requests.get(url, params=search)
-        if res.status_code != 200:
-            errors.append(res.content)
-            break
+        for i, search in enumerate(searches):
+            search['todo'] = 'query'
+            search['output'] = 'json'
+            res = self.session.get(self.url, params=search)
+            if res.status_code != 200:
+                errors.append(res.content)
+                break
 
-        data = json.loads(res.content)
-        if 'InmateLocator' not in data:
-            errors.append(res.content)
-            continue
-        for entry in data['InmateLocator']:
-            if entry['releaseCode'] == "R":
-                status = LookupResult.STATUS_RELEASED 
-                facilities = None
-            elif entry['faclCode'] == "":
-                status = LookupResult.STATUS_UNKNOWN
-                facilities = None
-            else:
-                status = LookupResult.STATUS_INCARCERATED
-                facilities = Facility.objects.filter(
-                    administrator__name="Federal Bureau of Prisons",
-                    code=entry['faclCode']
+            data = json.loads(res.content.decode('utf-8'))
+            if 'InmateLocator' not in data:
+                errors.append(res.content)
+                continue
+            for entry in data['InmateLocator']:
+                if entry['releaseCode'] == "R":
+                    status = self.STATUS_RELEASED 
+                    facilities = Facility.objects.none()
+                elif entry['faclCode'] == "":
+                    status = self.STATUS_UNKNOWN
+                    facilities = Facility.objects.none()
+                else:
+                    status = self.STATUS_INCARCERATED
+                    facilities = Facility.objects.filter(
+                        administrator__name="Federal Bureau of Prisons",
+                        code=entry['faclCode']
+                    )
+
+                facl_url = entry.get('faclUrl', '')
+                if facl_url:
+                    facl_url = "http://www.bop.gov" + facl_url
+
+                self.add_result(
+                    name=u"{} {}".format(entry.pop('nameFirst'), entry.pop('nameLast')),
+                    raw_facility_name=entry.get('faclCode', ''),
+                    facility_url=facl_url,
+                    facilities=facilities,
+                    status=status,
+                    numbers={entry.pop('inmateNumType'): entry.pop('inmateNum')},
+                    result_url=None,
+                    extra=entry
                 )
-
-            result = LookupResult(
-                name=u"{} {}".format(entry.pop('nameFirst'), entry.pop('nameLast')),
-                status=status,
-                numbers={entry.pop('inmateNumType'): entry.pop('inmateNum')},
-                facilities=facilities,
-                search_url=url,
-                result_url=None,
-                extra=entry
-            )
-            results.append(result)
-
-    return {"state": "Federal", "results": results, "errors": errors, "url": url}
-

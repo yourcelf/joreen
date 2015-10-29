@@ -17,6 +17,7 @@ import os
 import re
 import csv
 import scrapy
+import logging
 from crawler.items import FacilityItem
 from crawler.utils import e
 from collections import defaultdict
@@ -31,6 +32,8 @@ class CaliforniaSpider(scrapy.Spider):
     contact_address_page = "http://www.cdcr.ca.gov/Reports_Research/howtocontact.html"
     allowed_domains = ["www.cdcr.ca.gov"]
     download_delay = 5
+
+    errors = []
 
     def start_requests(self):
         """
@@ -58,18 +61,46 @@ class CaliforniaSpider(scrapy.Spider):
             requests.append(req)
         return requests
 
-    def check_address(self, entry, content, url):
-        checks = []
-        checks.append(r"{}".format(re.escape(entry['organization'])))
-        po_box = lambda p: p.replace("PO Box ", r"P\.?O\.?\s+B[Oo][Xx] ")
-        checks.append(r"{}[\s,]".format(po_box(entry['address1'])))
-        checks.append(r"{}".format(po_box(entry['address2'])))
-        checks.append(r"{}".format(re.escape(entry['city'])))
-        checks.append(r"{}".format(re.escape(entry['zip'])))
+    def check_address(self, entry, content, url, skip=None):
+        skip = skip or []
 
-        for check in checks:
-            if not re.search(check, content):
-                raise AddressCheckException("Check {} failed for {}".format(check, url))
+        # Special cases
+        content_hacks = {
+          "&amp;": "&",
+          "Facility 'M'": "Facility M"
+        }
+        if url == "http://www.cdcr.ca.gov/Facilities_Locator/Community_Correctional_Facilities.html":
+            content_hacks['Female Community Reentry Facility'] = 'McFarland Female Community Reentry Facility'
+        if url == "http://www.cdcr.ca.gov/Facilities_Locator/ASP.html":
+            content_hacks['Facility A -901'] = "Facility A, PO Box 901"
+            content_hacks['Facility B -902'] = "Facility B, PO Box 902"
+            content_hacks['Facility C -903'] = "Facility C, PO Box 903"
+            content_hacks['Facility D -904'] = "Facility D, PO Box 904"
+            content_hacks['Facility E -905'] = "Facility E, PO Box 905"
+            content_hacks['Facility F -906'] = "Facility F, PO Box 906"
+
+
+        for regex, replacement in content_hacks.iteritems():
+            content = re.sub(regex, replacement, content)
+
+        # Regular checks
+        esc = lambda p: re.escape(p).replace(r"\ ", r"\s+")
+        po_box = lambda p: esc(p).replace("PO\s+Box\s+", r"P\.?O\.?\s+B[Oo][Xx]\s+")
+        checks = {
+            'organization': r"{}".format(esc(entry['organization'])),
+            'address1': r"{}([\s,]|\b)".format(po_box(entry['address1'])),
+            'address2': r"{}".format(po_box(entry['address2'])),
+            'city': r"{}".format(esc(entry['city'])),
+            'zip': r"{}".format(esc(entry['zip']))
+        }
+        passed = {}
+
+        for check, regex in checks.iteritems():
+            if check in skip:
+                continue
+            else:
+                passed[check] = bool(re.search(regex, content))
+        return passed
 
     def parse(self, response):
         # The most likely data entry errors are:
@@ -83,15 +114,23 @@ class CaliforniaSpider(scrapy.Spider):
 
         entries = response.meta['entries']
         for entry in entries:
-            try:
-                self.check_address(entry, response.body, response.url)
-            except AddressCheckException:
-                # Try the contact address page instead if we haven't yet.
+            checks = entry.get('checks', {})
+            if not checks or not all(checks.values()):
+                skip = [c for c,v in checks.iteritems() if v]
+                checks = self.check_address(entry, response.body, response.url, skip)
+
+            if not all(checks.values()):
                 if response.url == self.contact_address_page:
-                    raise
-                req = scrapy.Request(self.contact_address_page, callback=self.parse)
+                    logging.warn("Address check failed:", entry['url'], entry['organization'], [entry[c] for c,v in checks.iteritems() if not v]
+                    raise AddressCheckException("Address checks failed")
+
+                # Try the contact address page to check remaining problems.
+                entry['checks'] = checks
+                req = scrapy.Request(url=self.contact_address_page,
+                        callback=self.parse, dont_filter=True)
                 req.meta['entries'] = [entry]
                 yield req
+                continue
 
             item = FacilityItem()
             for key in ('source', 'url', 'date', 'identifier', 'organization',

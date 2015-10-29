@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from localflavor.us.models import USStateField, USPostalCodeField, PhoneNumberField
 
@@ -23,9 +24,17 @@ class FacilityOperator(models.Model):
         return self.name
 
 class FacilityManager(models.Manager):
-    def fuzzy_lookup(self, term, **kwargs):
-        # TODO actually do a fuzzy
-        return self.filter(name__icontains=term, **kwargs)
+    def find_by_name(self, admin, name, **kwargs):
+        return self.filter(
+            Q(name__iexact=name) | Q(alternatename__name__iexact=name),
+            administrator__name=admin, **kwargs
+        ).distinct()
+
+    def find_by_partial_name(self, admin, name, **kwargs):
+        return self.filter(
+            Q(name__icontains=name) | Q(alternatename__name__icontains=name),
+            administrator__name=admin, **kwargs
+        ).distinct()
 
 class Facility(models.Model):
     code = models.CharField(max_length=255,
