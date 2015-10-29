@@ -3,4 +3,5 @@ __pycache__
 .scrapy
 venv
 db.sqlite3
-*cache.sqlite
+inmatelocator/cache/*
+!inmatelocator/cache/.keep

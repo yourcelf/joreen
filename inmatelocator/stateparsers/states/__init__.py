@@ -17,9 +17,6 @@ class LookupResult(object):
         self.result_url = result_url
         self.extra = extra
 
-        for key, val in kwargs.iteritems():
-            setattr(self, key, val)
-
 def normalize_name(name):
     # Replace all but - and a-z with emptystring.
     name = re.sub("[^-a-z ]", "", name.lower()).strip()

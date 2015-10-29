@@ -2,6 +2,7 @@ import re
 import time
 import requests
 import lxml.html
+from django.db.models import Q
 
 from localflavor.us.us_states import STATES_NORMALIZED
 
@@ -10,10 +11,12 @@ from facilities.models import Facility
 
 def search(**kwargs):
     url = "http://inmatelocator.cdcr.ca.gov/search.aspx"
+    auth_url = "http://inmatelocator.cdcr.ca.gov/default.aspx"
+
     
     # Get the session cookie.
     sess = requests.Session()
-    res = sess.get(url)
+    res = sess.get(auth_url)
     root = lxml.html.fromstring(res.text)
     data = {
         "__EVENTVALIDATION": "".join(root.xpath('//input[@id="__EVENTVALIDATION"]/@value')),
@@ -23,11 +26,9 @@ def search(**kwargs):
         'text': ''.join(root.xpath('//textarea[@name="text"]/text()')),
         "ctl00$LocatorPublicPageContent$btnAccept": "Agree",
     }
-    time.sleep(1)
     sess.post("http://inmatelocator.cdcr.ca.gov/default.aspx", data)
 
     # Now do the search
-    time.sleep(1)
     res = sess.get(url)
     root = lxml.html.fromstring(res.text)
     query = {
@@ -43,7 +44,6 @@ def search(**kwargs):
         "__VIEWSTATE": ''.join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
 
     }
-    time.sleep(1)
     res = sess.post(url, query)
 
     # Now parse the results.
@@ -80,11 +80,22 @@ def search(**kwargs):
         )
 
         # Try to find facility matches.
-        match = re.search("/Facilities_Locator/({\w+}).html", result.current_location_url)
+        match = re.search("/Facilities_Locator/(\w+).html", result.extra['current_location_url'])
         if match:
-            result.facilities = Facility.objects.filter(code=match.group(1))
-        elif "CA_Out_Of_State" in result.current_location_url and " - " in result.current_location:
-            name, state_abbr = result.current_location.split(" - ")
+            code = match.group(1)
+            if code == "Community_Correctional_Facilities":
+                name = result.extra['current_location'].strip()
+                result.facilities = Facility.objects.filter(
+                    Q(name=name) |
+                    Q(alternatename__name=name),
+                    administrator__name="California").distinct()
+            else:
+                result.facilities = Facility.objects.filter(
+                        code=code,
+                        administrator__name='California')
+
+        elif "CA_Out_Of_State" in result.extra['current_location_url'] and " - " in result.extra['current_location']:
+            name, state_abbr = result.extra['current_location'].split(" - ")
             state_abbr = re.sub("[^a-z ]", "", state_abbr.lower())
             state = STATES_NORMALIZED.get(state_abbr)
             if state:
@@ -92,6 +103,9 @@ def search(**kwargs):
                         term=name,
                         state=state,
                         administrator__name="California")
+        else:
+            errors.append("Unknown facility: {}".format(result.extra['current_location']))
+
 
         results.append(result)
 

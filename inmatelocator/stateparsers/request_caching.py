@@ -26,14 +26,15 @@ class ThrottleSession(requests.Session):
         self.netloc_log[netloc] = time.time()
         return res
 
-class SessionFactory(requests_cache.CachedSession, ThrottleSession):
-    pass
-
-def setup_cache(name="stateparsers_cache"):
+def setup_cache(name="cache/stateparsers", netloc_throttle=1):
     """
     Set up caching for GET and POST, with a custom session factory that
     throttles requests.
     """
+
+    class SessionFactory(ThrottleSession, requests_cache.CachedSession):
+        throttle = netloc_throttle
+
     requests_cache.install_cache(
         name,
         # We allow caching of POST (generally not a good idea) because many of
@@ -42,6 +43,7 @@ def setup_cache(name="stateparsers_cache"):
         # making real POST requests:
         # https://requests-cache.readthedocs.org/en/latest/api.html#requests_cache.core.disabled
         allowable_methods=('GET', 'POST'),
+        allowable_codes=(200, 301, 302, 307), # allow all non-error responses to get cached
         expire_after=60*60*24,
         session_factory=SessionFactory
     )

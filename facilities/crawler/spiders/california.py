@@ -19,6 +19,7 @@ import csv
 import scrapy
 from crawler.items import FacilityItem
 from crawler.utils import e
+from collections import defaultdict
 
 MANUAL_DATA = os.path.join(os.path.dirname(__file__), "..", "manual", "california.csv")
 
@@ -46,25 +47,30 @@ class CaliforniaSpider(scrapy.Spider):
                 else:
                     data.append(dict(zip(columns, row)))
 
-        requests = []
+        requests_by_url = defaultdict(list)
         for entry in data:
-            req = scrapy.Request(entry['url'], callback=self.parse)
-            req.meta['entry'] = entry
+            requests_by_url[entry['url']].append(entry)
+
+        requests = []
+        for url, entries in requests_by_url.iteritems():
+            req = scrapy.Request(url, callback=self.parse)
+            req.meta['entries'] = entries
             requests.append(req)
         return requests
 
     def check_address(self, entry, content, url):
         checks = []
-        checks.append(r"\b{}\b".format(re.escape(entry['organization'])))
-        po_box = lambda p: re.escape(p).replace("PO Box ", "P\.?O\.?\s+B[Oo][Xx]\s+")
-        checks.append(r"\b{}\b".format(po_box(entry['address1'])))
-        checks.append(r"\b{}\b".format(po_box(entry['address2'])))
-        checks.append(r"\b{}\b".format(re.escape(entry['city'])))
-        checks.append(r"\b{}\b".format(re.escape(entry['zip'])))
+        checks.append(r"{}".format(re.escape(entry['organization'])))
+        po_box = lambda p: p.replace("PO Box ", r"P\.?O\.?\s+B[Oo][Xx] ")
+        checks.append(r"{}[\s,]".format(po_box(entry['address1'])))
+        checks.append(r"{}".format(po_box(entry['address2'])))
+        checks.append(r"{}".format(re.escape(entry['city'])))
+        checks.append(r"{}".format(re.escape(entry['zip'])))
 
         for check in checks:
             if not re.search(check, content):
                 raise AddressCheckException("Check {} failed for {}".format(check, url))
+
     def parse(self, response):
         # The most likely data entry errors are:
         # 1. Mistyped numbers
@@ -75,21 +81,25 @@ class CaliforniaSpider(scrapy.Spider):
         # sure that the strings in the address are present in the page.  Highly
         # imperfect.
 
-        entry = response.meta['entry']
-        try:
-            self.check_address(entry, response.body, response.url)
-        except AddressCheckException:
-            req = scrapy.Request(self.contact_address_page, callback=self.parse)
-            req.meta['entry'] = entry
-            yield req
+        entries = response.meta['entries']
+        for entry in entries:
+            try:
+                self.check_address(entry, response.body, response.url)
+            except AddressCheckException:
+                # Try the contact address page instead if we haven't yet.
+                if response.url == self.contact_address_page:
+                    raise
+                req = scrapy.Request(self.contact_address_page, callback=self.parse)
+                req.meta['entries'] = [entry]
+                yield req
 
-        item = FacilityItem()
-        for key in ('source', 'url', 'date', 'identifier', 'organization',
-                    'address1', 'address2', 'city', 'state', 'zip', 'phone',
-                    'operator', 'administrator', 'type'):
-            item[key] = entry[key]
-        item['alternate_names'] = entry['alternate_names'].split(", ")
-        item['general'] = bool(entry['general'])
-        yield item
+            item = FacilityItem()
+            for key in ('source', 'url', 'date', 'identifier', 'organization',
+                        'address1', 'address2', 'city', 'state', 'zip', 'phone',
+                        'operator', 'administrator', 'type'):
+                item[key] = entry[key]
+            item['alternate_names'] = entry['alternate_names'].split(", ")
+            item['general'] = bool(entry['general'])
+            yield item
 
         
