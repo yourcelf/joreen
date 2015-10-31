@@ -40,6 +40,7 @@ INSTALLED_APPS = (
 
     'facilities',
     'stateparsers',
+    'blackandpink',
 )
 
 MIDDLEWARE_CLASSES = (

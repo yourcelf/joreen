@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from localflavor.us.models import USStateField, USPostalCodeField, PhoneNumberField
+from localflavor.us.models import USPostalCodeField, USZipCodeField, PhoneNumberField
 
 class FacilityType(models.Model):
     name = models.CharField(max_length=255)
@@ -45,8 +45,8 @@ class Facility(models.Model):
     address2 = models.CharField(max_length=255, blank=True)
     address3 = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=255)
-    state = USStateField()
-    zip = USPostalCodeField()
+    state = USPostalCodeField()
+    zip = USZipCodeField()
     phone = PhoneNumberField(blank=True)
     general = models.BooleanField(default=False, help_text="Is this address a 'general mail' address for facilities with this code?")
 

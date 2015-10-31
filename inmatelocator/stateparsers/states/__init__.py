@@ -74,7 +74,8 @@ class BaseStateSearch(LookupStatus):
         self.results.append(result)
         return result
 
-    def get_state(self, abbr):
+    @classmethod
+    def get_state(cls, abbr):
         abbr = re.sub("[^a-z ]", "", abbr.lower())
         return STATES_NORMALIZED.get(abbr)
 

@@ -3,6 +3,7 @@ import subprocess
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from facilities.models import *
+from stateparsers.states import BaseStateSearch
 
 class Command(BaseCommand):
     help = "Crawl to obtain names and addresses of state facilities."
@@ -11,7 +12,10 @@ class Command(BaseCommand):
         parser.add_argument('state', nargs='+', type=str)
 
     def handle(self, *args, **options):
-        for state in options['state']:
+        states = options['state']
+        if 'all' in states:
+            states = ['california', 'federal', 'florida', 'newyork', 'pennsylvania', 'texas']
+        for state in states:
             proc = subprocess.Popen([
                 settings.SCRAPY_BIN,
                 'crawl',
@@ -36,8 +40,11 @@ class Command(BaseCommand):
                     'address2': entry.get('address2') or '',
                     'address3': entry.get('address3') or '',
                     'city': entry.get('city') or '',
-                    'state': entry.get('state') or ''
+                    'state': entry.get('state') or '',
+                    'zip': entry.get('zip') or ''
                 }
+                if lookup['state']:
+                    lookup['state'] = BaseStateSearch.get_state(lookup['state'])
                 try:
                     facility = Facility.objects.get(**lookup)
                 except Facility.DoesNotExist:

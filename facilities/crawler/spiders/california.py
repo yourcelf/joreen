@@ -100,6 +100,13 @@ class CaliforniaSpider(scrapy.Spider):
                 continue
             else:
                 passed[check] = bool(re.search(regex, content))
+
+        format_checks = {
+            'zip': r'^\d{5}(-\d{4})?$'
+        }
+        for check, regex in format_checks.iteritems():
+            passed[check + "_format"] = bool(re.search(regex, entry.get(check)))
+
         return passed
 
     def parse(self, response):
@@ -121,7 +128,7 @@ class CaliforniaSpider(scrapy.Spider):
 
             if not all(checks.values()):
                 if response.url == self.contact_address_page:
-                    logging.warn("Address check failed:", entry['url'], entry['organization'], [entry[c] for c,v in checks.iteritems() if not v]
+                    logging.warn("Address check failed:", entry['url'], entry['organization'], [entry[c] for c,v in checks.iteritems() if not v])
                     raise AddressCheckException("Address checks failed")
 
                 # Try the contact address page to check remaining problems.

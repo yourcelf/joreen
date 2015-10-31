@@ -5,6 +5,7 @@ from crawler.items import FacilityItem
 from crawler.utils import e, phone_number_re
 from urlparse import urljoin
 import usaddress
+import logging
 
 class NewYorkSpider(scrapy.Spider):
     name = "newyork"
@@ -102,10 +103,9 @@ class NewYorkSpider(scrapy.Spider):
         item['address1'] = address[0]
         if len(address) > 1:
             item['address2'] = address[1]
-        item['city'] = mailing_addenda.get("PlaceName", address_parts['PlaceName'])
-        item['state'] = mailing_addenda.get("StateName", address_parts['StateName'])
-        item['zip'] = mailing_addenda.get("ZipCode", address_parts['ZipCode'])
-
+        item['city'] = mailing_addenda.get("PlaceName", None) or address_parts['PlaceName']
+        item['state'] = mailing_addenda.get("StateName", None) or address_parts['StateName']
+        item['zip'] = mailing_addenda.get("ZipCode", None) or address_parts['ZipCode']
         item['administrator'] = "New York"
         item['operator'] = "New York State Department of Corrections and Community Supervision"
 

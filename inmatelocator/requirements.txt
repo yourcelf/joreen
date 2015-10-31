@@ -3,3 +3,8 @@ django-localflavor
 requests
 requests-cache
 lxml
+jsonfield
+python-levenshtein
+fuzzywuzzy
+usaddress
+probablepeople
