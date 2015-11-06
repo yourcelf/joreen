@@ -15,12 +15,15 @@ class Search(BaseStateSearch):
         # Get the session cookie.
         res = self.session.get(self.url)
         root = lxml.html.fromstring(res.text)
-        
+
+        params = {
+           'txtLstNm': kwargs.get('last_name'),
+           'txtFrstNm': kwargs.get('first_name'),
+           'txtInmNo': kwargs.get('number'),
+       }
+
         data = {
-            'txtLstNm': kwargs.get("last_name"),
-            'txtFrstNm': kwargs.get("first_name"),
             'txtMidNm': '',
-            'txtInmNo': kwargs.get("number"),
             'cboSex': '---',
             'cboRace': '---',
             'cboCommCnty': '---',
@@ -31,6 +34,7 @@ class Search(BaseStateSearch):
             'radList': 'radNam',
             'btnSearch': 'Find+Inmate'
         }
+        data.update(params)
 
         for key in ("__EVENTVALIDATION", "__VIEWSTATE", "__VIEWSTATEGENERATOR",
                     "__EVENTTARGET", "__EVENTARGUMENT"):
@@ -63,6 +67,7 @@ class Search(BaseStateSearch):
             self.add_result(
                 name=name,
                 numbers={"": number},
+                search_terms=params,
                 raw_facility_name=current_location,
                 status=self.STATUS_INCARCERATED,
                 facilities=Facility.objects.find_by_partial_name("Pennsylvania", current_location),

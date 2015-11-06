@@ -89,11 +89,12 @@ class Search(BaseStateSearch):
                             name__icontains=self.normalize_name(unit_of_assignment))
                 else:
                     status = self.STATUS_UNKNOWN
-                    facilities = None
+                    facilities = Facility.objects.none()
 
                 self.add_result(
                     name=name,
                     numbers=numbers,
+                    search_terms=params,
                     raw_facility_name=unit_of_assignment,
                     result_url=result_url,
                     facilities=facilities,

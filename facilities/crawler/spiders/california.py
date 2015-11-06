@@ -99,7 +99,7 @@ class CaliforniaSpider(scrapy.Spider):
             if check in skip:
                 continue
             else:
-                passed[check] = bool(re.search(regex, content))
+                passed[check] = bool(re.search(regex, content, re.I))
 
         format_checks = {
             'zip': r'^\d{5}(-\d{4})?$'
@@ -128,8 +128,9 @@ class CaliforniaSpider(scrapy.Spider):
 
             if not all(checks.values()):
                 if response.url == self.contact_address_page:
-                    logging.warn("Address check failed:", entry['url'], entry['organization'], [entry[c] for c,v in checks.iteritems() if not v])
-                    raise AddressCheckException("Address checks failed")
+                    raise AddressCheckException("Address checks failed: {}, {}, {}".format(
+                        entry['url'], entry['organization'], [entry[c] for c,v in checks.iteritems() if not v]
+                    ))
 
                 # Try the contact address page to check remaining problems.
                 entry['checks'] = checks

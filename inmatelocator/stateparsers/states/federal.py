@@ -13,6 +13,7 @@ class Search(BaseStateSearch):
     minimum_search_terms = [["last_name", "first_name"], ["number"]]
 
     def crawl(self, **kwargs):
+        print(kwargs)
 
         searches = []
         if kwargs.get('number'):
@@ -26,12 +27,12 @@ class Search(BaseStateSearch):
             search['output'] = 'json'
             res = self.session.get(self.url, params=search)
             if res.status_code != 200:
-                errors.append(res.content)
+                self.errors.append(res.content)
                 break
 
             data = json.loads(res.content.decode('utf-8'))
             if 'InmateLocator' not in data:
-                errors.append(res.content)
+                self.errors.append(res.content)
                 continue
             for entry in data['InmateLocator']:
                 if entry['releaseCode'] == "R":
@@ -53,6 +54,7 @@ class Search(BaseStateSearch):
 
                 self.add_result(
                     name=u"{} {}".format(entry.pop('nameFirst'), entry.pop('nameLast')),
+                    search_terms=search,
                     raw_facility_name=entry.get('faclCode', ''),
                     facility_url=facl_url,
                     facilities=facilities,

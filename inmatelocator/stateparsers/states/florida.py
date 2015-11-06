@@ -48,29 +48,34 @@ class Search(BaseStateSearch):
         root = lxml.html.fromstring(res.text)
         sessionId = root.xpath("//input[@name='SessionID']/@value")[0]
 
-        res = self.session.post(self.post_url, {
-                "SessionID": sessionId,
-                "lastname": kwargs.get('last_name', ''),
-                "firstname": kwargs.get('first_name', ''),
-                "dcnumber": kwargs.get('number', ''), 
-                #"searchaliases": "on", # (decreases result quality)
-                "race": "ALL",
-                "sex": "ALL",
-                "eyecolor": "ALL",
-                "haircolor": "ALL",
-                "fromheightfeet": "",
-                "fromheightinches": "",
-                "toheightfeet": "",
-                "toheightinches": "",
-                "fromweight": "",
-                "toweight": "",
-                "fromage": "",
-                "toage": "",
-                "offensecategory": "ALL",
-                "commitmentcounty": "ALL",
-                "facility2": "ALL",
-                "items": "20"
-            })
+        params = {
+            "lastname": kwargs.get('last_name', ''),
+            "firstname": kwargs.get('first_name', ''),
+            "dcnumber": kwargs.get('number', ''), 
+        }
+        post_data = {
+            "SessionID": sessionId,
+            #"searchaliases": "on", # (decreases result quality)
+            "race": "ALL",
+            "sex": "ALL",
+            "eyecolor": "ALL",
+            "haircolor": "ALL",
+            "fromheightfeet": "",
+            "fromheightinches": "",
+            "toheightfeet": "",
+            "toheightinches": "",
+            "fromweight": "",
+            "toweight": "",
+            "fromage": "",
+            "toage": "",
+            "offensecategory": "ALL",
+            "commitmentcounty": "ALL",
+            "facility2": "ALL",
+            "items": "20"
+        }
+        post_data.update(params)
+
+        res = self.session.post(self.post_url, post_data)
 
         root = lxml.html.fromstring(res.text)
         rows = root.xpath('//table[@class="dcCSStableLight"]//tr')
@@ -99,6 +104,7 @@ class Search(BaseStateSearch):
 
             self.add_result(
                 name=name,
+                search_terms=params,
                 numbers={"dc_number": "".join(tds[2].xpath('.//text()')).strip()},
                 status=self.STATUS_INCARCERATED,
                 facilities=facilities,

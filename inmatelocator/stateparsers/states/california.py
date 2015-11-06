@@ -39,10 +39,12 @@ class Search(BaseStateSearch):
         # Now do the search
         res = self.session.get(self.url)
         root = lxml.html.fromstring(res.text)
-        query = {
+        params = {
             "ctl00$LocatorPublicPageContent$txtLastName": kwargs.get("last_name", ""),
             "ctl00$LocatorPublicPageContent$txtFirstName": kwargs.get("first_name", ""),
             "ctl00$LocatorPublicPageContent$txtCDCNumber": kwargs.get("number", ""),
+        }
+        query = {
             "ctl00$LocatorPublicPageContent$txtMiddleName": "",
             "ctl00$LocatorPublicPageContent$btnSearch": "Search",
             "__LASTFOCUS": "",
@@ -52,6 +54,7 @@ class Search(BaseStateSearch):
             "__VIEWSTATE": ''.join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
 
         }
+        query.update(params)
         res = self.session.post(self.url, query)
 
         # Now parse the results.
@@ -75,6 +78,7 @@ class Search(BaseStateSearch):
             result = self.add_result(
                 name=name,
                 numbers={"CDCR": "".join(row.xpath('(./td)[2]/text()'))},
+                search_terms=params,
                 status=self.STATUS_INCARCERATED,
                 raw_facility_name=current_location,
                 facility_url=current_location_url,

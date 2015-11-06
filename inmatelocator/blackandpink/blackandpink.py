@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 import re
+from collections import defaultdict
 from fuzzywuzzy import fuzz
-import facilities
 import probablepeople
 import usaddress
+from django.core.exceptions import ValidationError
 
-from stateparsers.states import BaseStateSearch
 from facilities.models import Facility
+import stateparsers
+from stateparsers.states import BaseStateSearch
+from blackandpink import zoho
 
 class ProfileMatchResultSet(object):
     def __init__(self, profile):
@@ -14,37 +17,103 @@ class ProfileMatchResultSet(object):
         self.profile = profile
         self.searches_tried = defaultdict(list)
 
-    def add(self, lookup_result, source, params):
+    def add(self, lookup_result, source=None, params=None):
         self.searches_tried[source].append(params)
-        score, breakdown = profile.compare_to_lookup_result(lookup_result)
-        self.matches.append({
-            'score': score,
-            'breakdown': breakdown,
-            'source': source,
-            'params': params
-        })
+        score, breakdown = self.profile.compare_to_lookup_result(lookup_result)
+        self.matches.append(ProfileMatchResult(
+            profile=self.profile,
+            score=score,
+            breakdown=breakdown,
+            source=source,
+            result=lookup_result,
+            params=params
+        ))
         return score
 
     def empty(self):
-        return {'score': 0, 'result': None, 'breakdown': {}, 'source': None}
+        return ProfileMatchResult(profile=self.profile)
 
-    def _add_meta(self, dct):
-        dct['out of'] = len(self.matches)
-        dct['searches'] = dict(self.searches_tried)
+    def _add_meta(self, pmr):
+        pmr.out_of = len(self.matches)
+        pmr.searches = dict(self.searches_tried)
 
     def __len__(self):
         return len(self.matches)
 
     def __iter__(self):
-        return sorted(self.matches, key=lambda m: m['score'], reverse=True)
+        return iter(sorted(self.matches, key=lambda m: m.score, reverse=True))
 
     def best(self):
         try:
-            match = iter(self).next()
+            for match in self:
+                self._add_meta(match)
+                return match
         except StopIteration:
-            match = self.empty()
+            pass
+        match = self.empty()
         self._add_meta(match)
         return match
+
+class ProfileMatchResult(object):
+    FOUND_UNKNOWN_FACILITY = "found_unknown_facility"
+    NOT_FOUND = "not_found"
+    FOUND_FACILITY_DIFFERS_ZOHO_HAS = "found_facility_differs_zoho_has"
+    FOUND_FACILITY_DIFFERS_ZOHO_LACKS = "found_facility_differs_zoho_lacks"
+    FOUND_FACILITY_MATCHES = "found_facility_matches"
+
+    def __init__(self, profile=None, score=0, result=None, breakdown=None,
+                 source=None, params=None):
+        self.profile = profile
+        self.score = score
+        self.result = result
+        self.breakdown = breakdown or {}
+        self.source = source
+        self.params = params
+
+        self.status = None
+        self.facility_match = None
+        self.out_of = None
+        self.searches = None
+
+    def classify(self, facility_directory):
+        if self.result is None or self.score <= 90:
+            self.status = self.NOT_FOUND
+            self.facility_match = None
+            return
+
+        # Compare addresses of matched facilities
+        matched_facilities = list(self.result.facilities)
+        if len(matched_facilities) == 0:
+            self.status = self.FOUND_UNKNOWN_FACILITY
+            self.facility_match = None
+            return
+
+        # Does one of the returned facilities match the current address?
+        for facility in matched_facilities:
+            match = self.profile.address.compare_to_facility(facility)
+            if match.is_valid():
+                self.status = self.FOUND_FACILITY_MATCHES
+                self.facility_match = match
+                return
+
+        # Facility differs. Pick one of the matched results to use.
+        try:
+            facility = [f for f in matched_facilities if f.general][0]
+        except IndexError:
+            # Arbitrarily pick one. :(
+            facility = matched_facilities[0]
+
+        # Does zoho have our facility?
+        zoho_matches = []
+        facility_match = facility_directory.get_by_facility(facility)
+        if facility_match:
+            self.status = self.FOUND_FACILITY_DIFFERS_ZOHO_HAS
+            self.facility_match = facility_match
+            return
+        else:
+            self.status = self.FOUND_FACILITY_DIFFERS_ZOHO_LACKS
+            self.facility_match = AddressFacilityMatch(None, None, None, facility)
+            return
 
 class Profile(object):
     def __init__(self, bp_member_number, number='', first_name='',
@@ -96,11 +165,11 @@ class Profile(object):
                     res = searcher.search(**params)
                 except stateparsers.MinimumTermsError:
                     continue
-                for result in res.results:
+                for result in res['results']:
                     score = matches.add(result, source, params)
                     if score == 100:
-                        return matches.best()
-        return matches.best()
+                        return matches
+        return matches
 
     @property
     def first_initial(self):
@@ -109,7 +178,7 @@ class Profile(object):
         return ""
 
     @classmethod
-    def from_zoho(self, **kwargs):
+    def from_zoho(self, kwargs):
         u = {
             'number': kwargs.get('Number', None),
             'bp_member_number': kwargs.get('B_P_Member_Number', None)
@@ -117,24 +186,27 @@ class Profile(object):
         for key in ("First_Name", "Middle_Name", "Last_Name", "Suffix"):
             u[key.lower()] = kwargs.get(key, '')
         if "Facility.Address_1_Facility" in kwargs or "Address_1_Facility" in kwargs:
-            self.address = Address.from_zoho(**kwargs)
+            address = Address.from_zoho(kwargs)
         else:
-            self.address = None
-        return Profile(**u)
+            address = None
+        profile = Profile(**u)
+        profile.address = address
+        profile.zoho_profile = kwargs
+        return profile
 
     @classmethod
     def _norm(cls, s):
-        return re.sub('[^\w]', '', s.lower())
+        return re.sub('[^\w]', '', (s or '').lower())
 
     def compare_number(self, lookup_result):
         number_scores = {}
-        for num_key, lookup_num in lookup_result.numbers.iteritems():
+        for num_key, lookup_num in lookup_result.numbers.items():
             if lookup_num.lstrip('0') == self.number:
                 score = 100
             else:
                 score = fuzz.ratio(self.number, lookup_num)
             number_scores[num_key] = score
-        total = max(number_scores.values()) if numer_scores else 0
+        total = max(number_scores.values()) if number_scores else 0
         return total, (number_scores or {'number': 'not found'})
 
     def compare_name(self, lookup_result):
@@ -172,7 +244,7 @@ class Profile(object):
                     last=self.last_name, first=self.first_name, middle=self.middle_name
                 ).strip()
             else:
-                full_name = u"{First_Name} {Middle_Name} {Last_Name}".format(
+                full_name = u"{first} {middle} {last}".format(
                     last=self.last_name, first=self.first_name, middle=self.middle_name
                 )
             full_name = re.sub('\s+', ' ', full_name) # remove duplicate spaces
@@ -193,9 +265,10 @@ class Profile(object):
 
 class Address(object):
     zoho_replacement_map = {
-        r'\bCorr\. Fac(\.|ility)': 'Correctional Facility',
-        r'\bCorr\.-?': 'Correctional Institution',
-        r'\bC\.I\.': 'Correctional Institution',
+        r'\sCorr\. Fac(\.|ility)': ' Correctional Facility',
+        r'\sCorr\.-?': ' Correctional Institution',
+        r'\sC\.I\.': ' Correctional Institution',
+        r'\s- Fed\.': '',
     }
 
     def __init__(self, name=None, address1=None, address2=None, city=None,
@@ -211,8 +284,10 @@ class Address(object):
         self.alternate_names = alternate_names or []
 
         self.zip = re.sub('[^\d-]', '', self.zip)
+
+    def validate(self):
         if not re.match('\d{5}(-\d{4})?', self.zip):
-            raise ValueError("Invalid zip code")
+            raise ValidationError("Invalid zip code")
 
     @classmethod
     def from_facility(cls, facility):
@@ -243,6 +318,11 @@ class Address(object):
         if a['name']:
             for fro, to in cls.zoho_replacement_map.items():
                 a['name'] = re.sub(fro, to, a['name'])
+
+        match = re.match(r'^(?P<main>.*)\s\((?P<abbr>[A-Z]{2,})\)$', a.get('name') or '')
+        if match:
+            a['name'] = match.group('main').strip()
+            a['alternate_names'] = [match.group('abbr')]
         return cls(**a)
 
     def flatten(self):
@@ -270,16 +350,33 @@ class Address(object):
             try:
                 parsed, atype = usaddress.tag(flat)
             except usaddress.RepeatedLabelError:
-                pass
+                lines = flat.split("\n")
+                recipient, others = lines[0], lines[1:]
+                try:
+                    parsed, atype = usaddress.tag("\n".join(others))
+                except usaddress.RepeatedLabelError:
+                    pass
+                else:
+                    if 'USPSBoxID' in parsed or 'AddressNumber' in parsed:
+                        parsed['Recipient'] = recipient
+                    else:
+                        parsed = None
+            
             # Even if parsing didn't raise an exception, sometimes the results are
             # junky. Make sure that "Recipient" is in there.
-            if parsed and 'Recipient' in parsed:
-                return parsed
+            if parsed:
+                if 'Recipient' in parsed:
+                    return parsed
+                # Sometimes the recipient gets stuffed into the PO Box type,
+                # especially if the recipient is an acronym.
+                if 'USPSBoxType' in parsed and '\n' in parsed['USPSBoxType']:
+                    parsed['Recipient'], parsed['USPSBoxType'] = parsed['USPSBoxType'].split('\n')
+                    return parsed
 
         return {
             'usaddress_bailed': True,
             'ZipCode': self.zip,
-            'Recipient': self.name,
+            'Recipient': self.name if self.name is not None else self.address1,
             'PlaceName': self.city,
             'StateName': self.state
         }
@@ -304,26 +401,26 @@ class Address(object):
             return bool(a1_tagged.get(key) or a2_tagged.get(key))
 
         def _address_part_norm(part):
-            return re.sub('[^\w\s]', '', part.lower())
+            return re.sub('[^\w\s]', '', part.lower().strip())
 
         # Required fields
         for key in ('Recipient', 'ZipCode', 'StateName'):
             if not _both_have(key):
                 return 0, {'Missing key {}'.format(key): 0}
 
+
+        scores = {}
+        fatal = False
+
         # Ensure that substrings of zipcode are equal.
         if fuzz.partial_ratio(a1_tagged['ZipCode'], a2_tagged['ZipCode']) != 100:
-            return 0, {'mismatched zip': 0}
+            fatal = "Mismatched zip"
 
         # Ensure that states are equal.
         s1 = BaseStateSearch.get_state(a1_tagged['StateName'].lower())
         s2 = BaseStateSearch.get_state(a2_tagged['StateName'].lower())
         if s1 is None or s2 is None or (s1 != s2):
-            return 0, {'mismatched state': 0}
-
-
-
-        scores = {}
+            fatal = "Mismatched state"
 
         #
         # Fuzzy match recipient and street address. We'll take an average of scores
@@ -331,8 +428,8 @@ class Address(object):
         #
 
         # Compare names
-        a1_names = [a1.name] + a1.alternate_names
-        a2_names = [a2.name] + a2.alternate_names
+        a1_names = [a1.name or a1_tagged.get('Recipient')] + a1.alternate_names
+        a2_names = [a2.name or a2_tagged.get('Recipient')] + a2.alternate_names
         for a1_name in a1_names:
             for a2_name in a2_names:
                 scores['name'] = max(
@@ -348,14 +445,26 @@ class Address(object):
         if a1_tagged.get('usaddress_bailed') or a2_tagged.get('usaddress_bailed'):
             # usaddress bailed while attempting to tag one of the addresses.  Just
             # fuzzy match on address1 and address2 instead.
-            for key in ("address1", "address2"):
-                v1 = _address_part_norm(getattr(a1, key) or "")
-                v2 = _address_part_norm(getattr(a2, key) or "")
+
+            # Fall back to name if address1 is missing.
+            a1_address1 = a1.address1 or a1.name or ""
+            a1_address2 = a1.address2 or ""
+            a2_address1 = a2.address1 or a2.name or ""
+            a2_address2 = a2.address2 or ""
+
+            for v1,v2,key in ((a1_address1, a2_address1, 'address1'),
+                              (a1_address2, a2_address2, 'address2')):
+                v1 = _address_part_norm(v1)
+                v2 = _address_part_norm(v2)
                 if v1 or v2:
                     street_score[key] = fuzz.ratio(v1, v2)
         else:
-            exact_keys = ['AddressNumber', 'USPSBoxID']
-            fuzzy_keys = [
+            # Keys to check if either address has it.
+            one_has_exact_keys = ['AddressNumber', 'USPSBoxID']
+            # Keys to check only if both addresses have it.
+            both_have_exact_keys = []
+            # Keys to check for fuzzy matches.
+            one_has_fuzzy_keys = [
                 'StreetName',
                 'AddressNumberPrefix',
                 'AddressNumberSuffix',
@@ -370,30 +479,67 @@ class Address(object):
                 'SubaddressIdentifier',
                 'SubaddressType',
             ]
-            for key in exact_keys:
-                if _one_has(key):
-                    if a1_tagged.get(key) != a2_tagged.get(key):
-                        street_score = {'mismatched {}'.format(key): 0}
-                        break
-                    else:
-                        street_score[key] = 100
-            else:
-                for key in fuzzy_keys:
-                    if _one_has(key):
-                        street_score[key] = fuzz.ratio(
-                            _address_part_norm(a1_tagged.get(key, '')),
-                            _address_part_norm(a2_tagged.get(key, '')))
+            both_have_fuzzy_keys = []
+
+            # If both have a PO Box, only pay attention to the non-PO Box keys
+            # that they both share.  This is to not penalize addresses that
+            # list both a street address and PO Box when compared to an address
+            # that only lists the PO Box.  But if both addresses contain a
+            # street address as well as a PO Box, consider the street addresses
+            # too.
+            if _both_have('USPSBoxID'):
+                both_have_exact_keys = [k for k in one_has_exact_keys if 'USPS' not in k]
+                one_has_exact_keys = [k for k in one_has_exact_keys if 'USPS' in k]
+                both_have_fuzzy_keys = [k for k in one_has_fuzzy_keys if 'USPS' not in k]
+                one_has_fuzzy_keys = [k for k in one_has_fuzzy_keys if 'USPS' in k]
+
+            for check, keylist, exact in (
+                    (_one_has, one_has_exact_keys, True),
+                    (_both_have, both_have_exact_keys, True),
+                    (_one_has, one_has_fuzzy_keys, False),
+                    (_both_have, both_have_fuzzy_keys, False)):
+                for key in keylist:
+                    if check(key):
+                        a1_norm = _address_part_norm(a1_tagged.get(key, ''))
+                        a2_norm = _address_part_norm(a2_tagged.get(key, ''))
+                        if exact:
+                            # Exact check
+                            if a1_norm != a2_norm:
+                                fatal = 'Mismatched {}'.format(key)
+                                street_score[key] = 0
+                                break
+                            else:
+                                street_score[key] = 100
+                        else:
+                            # Fuzzy check
+                            street_score[key] = fuzz.ratio(a1_norm, a2_norm)
+                else:
+                    continue
+                break
 
         if street_score:
             scores['street_total'] = sum(street_score.values()) / float(len(street_score))
+        elif ('Recipient' in a1_tagged and 'Recipient' in a2_tagged and \
+              _address_part_norm(a1_tagged['Recipient']) == \
+              _address_part_norm(a2_tagged['Recipient'])):
+            # There's no "street" part listed in the address, but the
+            # recipients exist and match up. This is likely to be a
+            # "streetless" address like "Montgomery Air Force Base".
+            scores['street_total'] = 100
         else:
             scores['street_total'] = 0
         score = sum(scores.values()) / float(len(scores))
         breakdown = scores
         breakdown.update(street_score)
+        if fatal:
+            breakdown['fatal'] = fatal
         return score, breakdown
 
-    def find_matching_facility(self, constrain_zip=False):
+    def compare_to_facility(self, facility):
+        score, breakdown = self.compare(Address.from_facility(facility))
+        return AddressFacilityMatch(self, score, breakdown, facility)
+
+    def find_matching_facilities(self, constrain_zip=False):
         """
         Find the Facility object in the database that best matches this
         address.
@@ -410,10 +556,52 @@ class Address(object):
             facilities = Facility.objects.filter(zip__icontains=self.zip[0:5])
         matches = []
         for facility in facilities:
-            score, breakdown = self.compare(Address.from_facility(facility))
-            matches.append((score, breakdown, facility))
-        if matches:
-            matches.sort(key=lambda m: m[0], reverse=True)
-            return matches[0]
-        return (0, {}, None)
+            matches.append(self.compare_to_facility(facility))
 
+        matches.sort(key=lambda m: m.score, reverse=True)
+        return [m for m in matches[0:5]]
+
+class AddressFacilityMatch(object):
+    def __init__(self, address, score, breakdown, facility):
+        self.address = address
+        self.score = score
+        self.breakdown = breakdown
+        self.facility = facility
+        self.fatal = breakdown.get('fatal', False) if breakdown else False
+
+    def is_valid(self):
+        return not self.fatal and self.score > 90 or (
+            self.breakdown.get('street_total', 0) == 100 and \
+            self.breakdown.get('name', 0) > 50
+        )
+
+class FacilityDirectory(object):
+    def __init__(self):
+        self.matches = {}
+        self.facilities = {}
+        for zoho_facility in zoho.fetch_all_facilities():
+            key = zoho_facility['Facility_Add2_City_State_Zip']
+            address = Address.from_zoho(zoho_facility)
+            matches = address.find_matching_facilities(constrain_zip=True)
+            for match in matches:
+                if match.is_valid():
+                    match.zoho_facility = zoho_facility
+                    self.facilities[match.facility.id] = match
+                    found = True
+                    self.matches[key] = match
+                    break
+            else:
+                self.matches[key] = AddressFacilityMatch(
+                    address=address, facility=None, score=0, breakdown=None)
+
+    def get_by_zoho_address(self, zoho_address):
+        for lookup in ('Facility_Add2_City_State_Zip', 'Facility'):
+            if lookup in zoho_address:
+                key = lookup
+                break
+        else:
+            raise Exception("Lookup key not found")
+        return self.matches.get(key)
+
+    def get_by_facility(self, facility):
+        return self.facilities.get(facility.id)

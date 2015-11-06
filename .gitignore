@@ -6,3 +6,5 @@ db.sqlite3*
 inmatelocator/cache/*
 !inmatelocator/cache/.keep
 settings.py
+frontend/bower_components
+frontend/node_modules

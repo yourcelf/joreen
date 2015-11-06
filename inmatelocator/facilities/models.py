@@ -61,6 +61,22 @@ class Facility(models.Model):
 
     objects = FacilityManager()
 
+    def flat_address(self):
+        parts = []
+        haz = lambda key: hasattr(self, key) and getattr(self, key)
+        if haz('name'): parts.append(self.name)
+        if haz('address1'): parts.append(self.address1)
+        if haz('address2'): parts.append(self.address2)
+        if haz('address3'): parts.append(self.address3)
+
+        if haz('city') and haz('state') and haz('zip'):
+            parts.append("{}, {}  {}".format(self.city, self.state, self.zip))
+        else:
+            if haz('city'): parts.append(self.city)
+            if haz('state'): parts.append(self.state)
+            if haz('zip'): parts.append(self.zip)
+        return u"\n".join(parts)
+
     def __str__(self):
         return self.code
 

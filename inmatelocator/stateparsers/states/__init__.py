@@ -11,26 +11,28 @@ class LookupStatus(object):
     STATUS_UNKNOWN = "Unknown"
 
 class LookupResult(LookupStatus):
+    kwargs = ['name',
+              'numbers',
+              'status',
+              'facilities',
+              'raw_facility_name',
+              'facility_url',
+              'search_url',
+              'result_url',
+              'search_terms',
+              'administrator_name',
+              'extra']
 
-    def __init__(self,
-            name,
-            numbers,
-            status,
-            raw_facility_name,
-            facility_url,
-            facilities,
-            search_url,
-            result_url,
-            extra):
-        self.name = name
-        self.numbers = numbers
-        self.status = status
-        self.facilities = facilities
-        self.raw_facility_name = raw_facility_name
-        self.facility_url = facility_url
-        self.search_url = search_url
-        self.result_url = result_url
-        self.extra = extra
+    def __init__(self, **kwargs):
+        for kwarg in self.kwargs:
+            setattr(self, kwarg, kwargs[kwarg])
+
+    def to_dict(self):
+        dct = {}
+        for key in self.kwargs:
+            dct[key] = getattr(self, key)
+        dct['facilities'] = list(dct['facilities'].values_list('pk', flat=True))
+        return dct
 
 class BaseStateSearch(LookupStatus):
 
@@ -48,8 +50,8 @@ class BaseStateSearch(LookupStatus):
         pass
 
     def search(self, **kwargs):
-        self.session = requests.Session()
         self.check_minimum_terms(kwargs)
+        self.session = requests.Session()
         self.errors = []
         self.results = []
         self.crawl(**kwargs)
@@ -57,10 +59,11 @@ class BaseStateSearch(LookupStatus):
             if result.raw_facility_name:
                 FacilityNameResult.objects.log_name(
                     self.administrator_name, result.raw_facility_name, result.facility_url)
-        return {'results': self.results, 'errors': self.errors,}
+        return {'results': self.results, 'errors': self.errors}
 
     def add_result(self, **kwargs):
         opts = {
+            'administrator_name': self.administrator_name,
             'status': self.STATUS_UNKNOWN,
             'raw_facility_name': '',
             'facility_url': '',
@@ -85,7 +88,7 @@ class BaseStateSearch(LookupStatus):
     def check_minimum_terms(self, kwargs):
         for minimum in self.minimum_search_terms:
             for term in minimum:
-                if term not in kwargs:
+                if term not in kwargs or not kwargs[term]:
                     break
             else:
                 return True

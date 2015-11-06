@@ -29,11 +29,14 @@ class Search(BaseStateSearch):
         dfh_state_token = root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0]
 
         params = {
+            "M00_LAST_NAMEI": kwargs.get("last_name", ""),
+            "M00_FIRST_NAMEI": kwargs.get('first_name', ''),
+        }
+
+        post_data = {
             "K01": "WINQ000",
             "DFH_STATE_TOKEN": dfh_state_token, 
             "DFH_MAP_STATE_TOKEN": "",
-            "M00_LAST_NAMEI": kwargs.get("last_name", ""),
-            "M00_FIRST_NAMEI": kwargs.get('first_name', ''),
             "M00_MID_NAMEI": "",
             "M00_NAME_SUFXI": "",
             "M00_DOBCCYYI": "",
@@ -63,10 +66,11 @@ class Search(BaseStateSearch):
                     errors.append("Unrecognized number format")
 
             # Numbers must be exact, and take us directly to a single result page.
-            res = self.session.post(self.post_url, params)
+            post_data.update(params)
+            res = self.session.post(self.post_url, post_data)
             root = lxml.html.fromstring(res.text)
             if "The inmate you have chosen has multiple commitments to NYS DOCCS" in res.text:
-                params = {
+                post_data = {
                     "M12_SEL_DINI": root.xpath("//input[@name='M12_SEL_DINI']/@value")[0],
                     "K01": root.xpath("//input[@name='K01']/@value")[0],
                     "K02": root.xpath("//input[@name='K02']/@value")[0],
@@ -78,8 +82,8 @@ class Search(BaseStateSearch):
                     "DFH_MAP_STATE_TOKEN": root.xpath("//input[@name='DFH_MAP_STATE_TOKEN']/@value")[0],
                     "din1": root.xpath("//input[@name='din1']/@value")[0],
                 }
-                url = base + "/GCA00P00/WIQ2/WINQ120"
-                res = requests.post(url, params)
+                url = self.url + "/GCA00P00/WIQ2/WINQ120"
+                res = requests.post(url, post_data)
             if "Identifying and Location Information" in res.text:
 
                 facility_name = "".join(root.xpath("//td[@headers='t1g']/text()")).strip()
@@ -89,6 +93,7 @@ class Search(BaseStateSearch):
                 self.add_result(
                     name="".join(root.xpath("//td[@headers='t1b']/text()")).strip(),
                     numbers={"din": "".join(root.xpath("//td[@headers='t1a']/text()")).strip()},
+                    search_terms=params,
                     status=status,
                     raw_facility_name=facility_name,
                     facilities=facilities,
@@ -127,6 +132,7 @@ class Search(BaseStateSearch):
                 self.add_result(
                     name=name,
                     numbers={"din": "".join(row.xpath(".//td[@headers='din']//input[@type='submit']/@value")).strip()},
+                    search_terms=params,
                     raw_facility_name=facility_name,
                     status=status,
                     facilities=facilities,
