@@ -61,6 +61,16 @@ class Facility(models.Model):
 
     objects = FacilityManager()
 
+    def to_result_dict(self):
+        out = {}
+        for key in ["id", "code", "name", "address1", "address2", "address3", "city", "state", "zip", "phone", "general", "provenance", "provenance_url"]:
+            out[key] = getattr(self, key)
+        out["formatted_address"] = self.flat_address()
+        out["administrator"] = self.administrator.name if self.administrator else ""
+        out["type"] = self.type.name if self.type else ""
+        out["modified"] = self.modified.isoformat()
+        return out
+
     def flat_address(self):
         parts = []
         haz = lambda key: hasattr(self, key) and getattr(self, key)
@@ -82,7 +92,7 @@ class Facility(models.Model):
 
     class Meta:
         verbose_name_plural = "facilities"
-        ordering = ['state', 'name', 'general']
+        ordering = ['state', 'name', '-general', 'address1']
 
 class AlternateName(models.Model):
     facility = models.ForeignKey(Facility)

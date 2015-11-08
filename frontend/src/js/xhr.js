@@ -8,10 +8,8 @@ const xhr = {
         }
         url = url + "?" + parts.join('&');
       }
-      console.log("GET", url);
       let xmlhttp = new XMLHttpRequest();
       xmlhttp.onreadystatechange = function(event) {
-        console.log(xmlhttp.readyState, event);
         if (XMLHttpRequest.DONE !== xmlhttp.readyState) {
           return;
         }

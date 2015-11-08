@@ -31,7 +31,7 @@ class LookupResult(LookupStatus):
         dct = {}
         for key in self.kwargs:
             dct[key] = getattr(self, key)
-        dct['facilities'] = list(dct['facilities'].values_list('pk', flat=True))
+        dct['facilities'] = list(map(lambda f: f.to_result_dict(), dct['facilities']))
         return dct
 
 class BaseStateSearch(LookupStatus):
