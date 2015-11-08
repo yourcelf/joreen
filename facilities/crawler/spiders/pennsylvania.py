@@ -6,6 +6,12 @@ from crawler.items import FacilityItem
 from crawler.utils import e, phone_number_re
 import usaddress
 
+alternate_names = {
+    "ADAPPT Treatment Services": ["ADAPPT TREATMENT SERVICE"],
+    "Pittsburgh CCC": ["PITTSBURGH CCC #3"],
+    "Transitional Living Center": ["TRANSITIONAL LIVING CTR"],
+}
+
 class PennsylvaniaSpider(scrapy.Spider):
     name = "pennsylvania"
 
@@ -25,6 +31,13 @@ class PennsylvaniaSpider(scrapy.Spider):
             scrapy.Request(url, callback=self.parse_ccc) for url in self.ccc_urls
         ]
 
+    
+    def get_alternate_names(self, name):
+        alts = alternate_names.get(name, [])
+        if re.match("^SCI .*$", name):
+            alts.append(re.sub("^SCI ", "", name))
+        return alts
+    
     def parse_doc(self, response):
         lines = e(response.css("div.content-container").xpath('.//text()')).split("\n")
         lines = [l.strip() for l in lines]
@@ -130,6 +143,7 @@ class PennsylvaniaSpider(scrapy.Spider):
         item['zip'] = parts['ZipCode']
         # Special case: fix a duplicated zip+4 extension
         item['zip'] = item['zip'].replace("-5961-5961", "-5961")
+        item['alternate_names'] = self.get_alternate_names(item['organization'])
         return item
 
 

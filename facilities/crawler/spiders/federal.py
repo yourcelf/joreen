@@ -41,7 +41,7 @@ class FederalSpider(scrapy.Spider):
         item = res.meta['item']
         item['administrator'] = "Federal Bureau of Prisons"
         item['operator'] = "Federal Bureau of Prisons"
-        item['alternate_names'] = []
+        item['alternate_names'] = [item['identifier']]
         for i,location in enumerate(data['Locations']):
             if i == 0:
                 item['organization'] = location['nameTitle']

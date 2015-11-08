@@ -8,38 +8,70 @@ from crawler.utils import e, texas_unit_type_re
 from urlparse import urljoin
 import probablepeople
 
+alternate_name_map = {
+    "Carole S. Young Medical Facility": ["CAROL YOUNG COMPLEX"],
+    "Diboll Correctional Center": ["DIBOLL PRIV"],
+    "East Texas Multi-Use Facility": ["EAST TEXAS TREATMENT FACILITY"],
+    "Hospital Galveston": ["HOSPITAL-GALV", "GALVESTON"],
+    "Beauford H. Jester I Unit": ["JESTER I"],
+    "Beauford H. Jester II Unit": ["JESTER II"],
+    "Beauford H. Jester III Unit": ["JESTER III"],
+    "Beauford H. Jester IV Unit": ["JESTER IV"],
+    "Joe F. Gurney Transfer Facility": ["JOE F GURNEY"],
+    "Joe Kegans State Jail": ["KEGANS STATE J"],
+    "John R. Lindsey State Jail": ["LINDSEY SJ"],
+    "Lockhart Correctional Facility": ["LOCKHART PRIV P"],
+    "T3": ["LOCKHART WORK FAC"],
+    "Wallace Pack Unit": ["PACK I"],
+    "Lucile Plane State Jail": ["PLANE JAIL"],
+    "W. F. Ramsey Unit": ["RAMSEY I"],
+    "T.L. Roach Unit": ["ROACH BT CAMP"],
+    "South Texas Intermediate Sanction Facility": ["SOUTH TEXAS ISF"],
+    "Travis County State Jail": ["TRAVIS JAIL"],
+    "John Montford Unit": ["West Texas Hospital", "WEST TEXAS HOSP"],
+    "West Texas Intermediate Sanction Facility": ["WEST TEXAS ISF"],
+    "Willacy County State Jail": ["WILLACY"],
+    "Linda Woodman State Jail": ["WOODMAN SJ"],
+}
+
+
 class TexasSpider(scrapy.Spider):
     name = "texas"
     allowed_domains = ["tdcj.state.tx.us"]
     start_urls = ["http://tdcj.state.tx.us/unit_directory/index.html"]
     download_delay = 5
 
-    def alternate_names(self, name):
+    def alternate_names(self, item):
         """
         Texas names their prisons after people, and then uses permutations of
         first/middle/last, nicknames, and initials when refering to them in
         different places. Ugh.
         """
-        if "Texas" in name:
-            return []
+        name = item['organization']
+        alts = alternate_name_map.get(item['identifier'], alternate_name_map.get(item['organization'], []))
 
-        if name == "Hospital Galveston":
-            return ["Galveston"]
-
-        def add_suffixes(alternate_names):
-            alts = []
-            for name in alternate_names:
-                alts.append(name)
-                alts.append(u'{} Unit'.format(name))
-                alts.append(u'{} Prison'.format(name))
+        # Skip out for non-person named things
+        if "Texas" in name or name == "Hospital Galveston" or "T3" == item['identifier']:
             return alts
 
-        # Remove the unit suffix
-        name = texas_unit_type_re.sub("", name)
-        if len(name.split()) == 1:
-            return add_suffixes([name])
+        def add_suffixes(name_variants):
+            suffixed = []
+            for name in name_variants:
+                suffixed.append(name)
+                suffixed.append(u'{} Unit'.format(name))
+                suffixed.append(u'{} Prison'.format(name))
+            return suffixed
 
-        # Special case some names that probablepeople doesn't do right.
+        # Remove the unit suffix -- we'll add all variants with suffix later.
+        name = texas_unit_type_re.sub("", name)
+
+        # For single words, just add suffixes and exit.
+        if len(name.split()) == 1:
+            alts += add_suffixes([name])
+            return alts
+
+        # Parse the names into parts.  Special case some names that
+        # probablepeople doesn't do right.
         if name == "Price Daniel":
             parsed = {'Surname': 'Daniel', 'GivenName': 'Price'}
         elif name == "O.L. Luther":
@@ -52,35 +84,38 @@ class TexasSpider(scrapy.Spider):
             if ntype != "Person":
                 raise Exception("probablepeople tagged an unexpected name type `{}` for `{}`".format(ntype, name))
 
-        alts = set([name])
+        name_set = set([name])
         if 'Surname' in parsed:
-            alts.add(parsed['Surname'])
+            name_set.add(parsed['Surname'])
 
             if 'GivenName' in parsed or 'FirstInitial' in parsed:
                 first = parsed.get('GivenName', parsed.get('FirstInitial'))
                 # First initial, last name
-                alts.add(u"{} {}".format(first[0], parsed['Surname']))
+                name_set.add(u"{} {}".format(first[0], parsed['Surname']))
                 # Regular first/last
-                alts.add(u"{} {}".format(first, parsed['Surname']))
+                name_set.add(u"{} {}".format(first, parsed['Surname']))
 
                 # First and last w/o initial
                 if 'MiddleInitial' in parsed or 'MiddleName' in parsed:
-                    alts.add(u"{} {}".format(first, parsed['Surname']))
+                    name_set.add(u"{} {}".format(first, parsed['Surname']))
 
             # Add nickname - lastname.
             if 'Nickname' in parsed:
-                alts.add(u"{} {}".format(
+                name_set.add(u"{} {}".format(
                     re.sub('[^a-zA-Z]', '', parsed['Nickname']),
                     parsed['Surname']))
 
         else:
             raise Exception("Too few name parts for {}, ``{}``".format(name, parsed))
 
-        # Nicknames
+        # Special case for name-changing nicknames
         if parsed.get('Surname') == "Clements":
-            alts.add("Bill Clements") # nickname
+            name_set.add("Bill Clements") # nickname
 
-        return add_suffixes(alts)
+        # Add the unit/prison suffixes onto the names.
+        alts += add_suffixes(name_set)
+
+        return alts
 
     def parse(self, response):
         for row in response.css('table.os tr'):
@@ -93,6 +128,7 @@ class TexasSpider(scrapy.Spider):
                 e(td.css('::text')) for td in tds
             ]
             name = name.replace('*', '')
+
             url = urljoin(response.url, e(tds[0].xpath('.//a/@href')))
 
             item = FacilityItem()
@@ -146,7 +182,7 @@ class TexasSpider(scrapy.Spider):
         if name_text is None:
             raise Exception(u"Null name text for " + response.url)
 
-        match = re.match("^(.*?)[\s\n]+(\(\d{3}\)\s\d{3}-\d{4}.*)$", address_text)
+        match = re.match("^(.*?)[\s\n]+(\(\d{3}\)\s\d{3}-\d{4}).*$", address_text)
         if match:
             address = match.group(1).strip()
             phone = match.group(2).strip()
@@ -162,6 +198,7 @@ class TexasSpider(scrapy.Spider):
             item2['url'] = item['url']
             item2['date'] = item['date']
             item2['administrator'] = item['administrator']
+            item2['operator'] = item['operator']
             item['identifier'], item2['identifier'] = item['identifier'].split(' / ')
             item['organization'], item2['organization'] = name_text.split(' / ')
             if " / " in item['type']:
@@ -178,7 +215,8 @@ class TexasSpider(scrapy.Spider):
 
 
         for item, address in address_items:
-            item['alternate_names'] = self.alternate_names(item['organization'])
+            item['organization'] = re.sub('\s+', ' ', item['organization'])
+            item['alternate_names'] = self.alternate_names(item)
             parts = [p.strip() for p in address.split(", ")]
             if len(parts) == 3:
                 a, c, sz = parts

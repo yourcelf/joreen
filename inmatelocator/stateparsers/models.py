@@ -28,6 +28,9 @@ class FacilityNameResult(models.Model):
 
     objects = FacilityNameResultManager()
 
+    def find_facilities(self):
+        return Facility.objects.find_by_name(self.administrator.name, self.name)
+
     def __str__(self):
         return self.name
 

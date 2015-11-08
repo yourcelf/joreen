@@ -8,40 +8,11 @@ from facilities.models import Facility
 
 # Load facility data.
 
-# Mapping from things we get from the search API to normalized names from the
-# directory.
-facility_name_overrides = {
-  'apalachee east unit': 'Apalachee Correctional Institution East',
-  'apalachee west unit': 'Apalachee Correctional Institution West',
-  'jackson work camp': 'Jackson Correctional Institution',
-  'baker re entry centr': 'Baker Correctional Institution',
-  'blackwater cf': 'Blackwater River Correctional Facility',
-  'everglades re entry': 'Everglades Correctional Institution',
-  'flwomens recpnctr': 'Florida Womens Reception Center',
-  'okeechobee work camp': 'Okeechobee',
-  'rmc main unit': 'Reception and Medical Center',
-  'rmc west unit': 'Reception and Medical Center West Unit',
-  'sago palm re entry c': 'Sago Palm Re-Entry Center',
-  'sfrc': 'South Florida Reception Center',
-  'suncoast crcfem': 'Suncoast Community Release Center',
-  'union work camp': 'Union Correctional Work Camp',
-  'reentry ctr of ocala': 'Re-Entry Center Of Ocala',
-}
-
 class Search(BaseStateSearch):
     administrator_name = "Florida"
     minimum_search_terms = [["first_name"], ["last_name"], ["number"]]
     url = "http://www.dc.state.fl.us/ActiveInmates/search.asp"
     post_url = "http://www.dc.state.fl.us/ActiveInmates/List.asp?DataAction=Filter"
-
-    @classmethod
-    def normalize_name(cls, name):
-        norm = super(Search, cls).normalize_name(name)
-        if norm in facility_name_overrides:
-            return facility_name_overrides[norm]
-        norm = re.sub(r'\bci(\b|$)', "correctional institution", norm)
-        norm = re.sub(r'\bcf(\b|$)', "correctional facility", norm)
-        return norm
 
     def crawl(self, **kwargs):
         res = self.session.get(self.url)
@@ -99,7 +70,7 @@ class Search(BaseStateSearch):
             current_facility = "".join(tds[6].xpath('.//text()')).strip()
 
             facilities = Facility.objects.find_by_name(
-                "Florida", self.normalize_name(current_facility)
+                "Florida", current_facility
             )
 
             self.add_result(

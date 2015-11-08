@@ -7,10 +7,23 @@ from urlparse import urljoin
 import usaddress
 import logging
 
+alternate_names = {
+    "Eastern NY Correctional Facility": ["EASTERN"],
+    "Mid-State Correctional Facility": ["MIDSTATE"],
+    "Willard Drug Treatment Campus": ["WILLARD"],
+}
+
+
 class NewYorkSpider(scrapy.Spider):
     name = "newyork"
     allowed_domains = ["www.doccs.ny.gov"]
     start_urls = ["http://www.doccs.ny.gov/faclist.html"]
+
+    def get_alternate_names(self, name):
+        alts = alternate_names.get(name, [])
+        if " Correctional Facility" in name:
+            alts.append(name.replace(" Correctional Facility", ""))
+        return alts
 
     def parse(self, response):
         table = response.css("table[summary='Listing of Correctional Facilities']")[0]
@@ -108,5 +121,6 @@ class NewYorkSpider(scrapy.Spider):
         item['zip'] = mailing_addenda.get("ZipCode", None) or address_parts['ZipCode']
         item['administrator'] = "New York"
         item['operator'] = "New York State Department of Corrections and Community Supervision"
+        item['alternate_names'] = self.get_alternate_names(item['organization'])
 
         return item

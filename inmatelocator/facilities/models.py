@@ -47,7 +47,7 @@ class Facility(models.Model):
     city = models.CharField(max_length=255)
     state = USPostalCodeField()
     zip = USZipCodeField()
-    phone = PhoneNumberField(blank=True)
+    phone = PhoneNumberField(blank=True, max_length=255)
     general = models.BooleanField(default=False, help_text="Is this address a 'general mail' address for facilities with this code?")
 
     type = models.ForeignKey(FacilityType, null=True)

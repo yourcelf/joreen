@@ -7,10 +7,61 @@ from urlparse import urljoin
 from addresscleaner import parse_address, format_address
 
 alternate_names = {
-    'Northwest Florida Reception Center': ['NWFRC', 'NWFRC Main Unit'],
-    'Northwest Florida Reception Center Annex': ['NWFRC Annex'],
+    'Apalachee Correctional Institution East': ['APALACHEE EAST UNIT'],
+    'Apalachee Correctional Institution West': ['APALACHEE WEST UNIT'],
+    'Baker Re-Entry Center': ['BAKER RE-ENTRY CENTR'],
+    'Berrydale Forestry Camp': ['BERRYDALE FRSTRY CMP'],
+    'Blackwater River Correctional Facility': ['BLACKWATER C.F.'],
+    'Bridges Of Jacksonville': ['BRIDGES OF JACKSONVI'],
+    'Central Florida Reception Center': ['CFRC-MAIN'],
+    'Central Florida Reception Center East Unit': ['CFRC-EAST'],
+    'Central Florida Reception Center South Unit': ['CFRC-SOUTH'],
+    'Columbia Correctional Institution Annex': ['COLUMBIA ANNEX'],
+    'Cross City Correctional Institution': ['CROSS CITY EAST UNIT'],
+    'Everglades Re-Entry Center': ['EVERGLADES RE-ENTRY'],
+    "Florida Women's Reception Center": ['FL.WOMENS RECPN.CTR'],
     'Florida State Prison': ['FSP'],
     'Florida State Prison West Unit': ['FSP West Unit'],
+    'Franklin Work Camp': ['FRANKLIN CI WORK CMP'],
+    'Gadsden Re-Entry Center': ['GADSDEN RE-ENTRY CTR'],
+    'Gulf Correctional Institution Annex': ['GULF C.I.- ANNEX'],
+    'Hamilton Correctional Institution Annex': ['HAMILTON ANNEX'],
+    'Lancaster Work Camp': ['LANCASTER W.C.'],
+    'Liberty Work Camp - South Unit': ['LIBERTY SOUTH UNIT'],
+    'Lowell Correctional Institution Annex': ['LOWELL ANNEX'],
+    'Northwest Florida Reception Center': ['NWFRC', 'NWFRC Main Unit', 'NWFRC MAIN UNIT.'],
+    'Northwest Florida Reception Center Annex': ['NWFRC Annex', 'NWFRC ANNEX.'],
+    'Okeechobee Correctional Institution': ['OKEECHOBEE WORK CAMP'],
+    'Rmc Work Camp': ['R.M.C WORK CAMP'],
+    'Reception And Medical Center': ['R.M.C.- MAIN UNIT'],
+    'Reception And Medical Center West Unit': ['R.M.C.- WEST UNIT'],
+    'Re-Entry Center Of Ocala': ['REENTRY CTR OF OCALA'],
+    'Santa Rosa Correctional Institution Annex': ['SANTA ROSA ANNEX'],
+    'South Florida Reception Center': ['S.F.R.C.'],
+    'South Florida Reception Center South Unit': ['S.F.R.C SOUTH UNIT'],
+    'Sago Palm Re-Entry Center': ['SAGO PALM RE-ENTRY C'],
+    'Santa Rosa Work Camp': ['SANTA ROSA WORK CMP'],
+    'St. Petersburg Community Release Center': ['ST. PETE C.R.C.'],
+    'Sumter Correctional Institution': ['SUMTER  C.I.'],
+    'Sumter Basic Training Unit': ['SUMTER B.T.U.'],
+    'Suncoast Community Release Center': ['SUNCOAST C.R.C.(FEM)'],
+    'Suwannee Correctional Institution': ['SUWANNEE C.I'],
+    'Tallahassee Community Release Center': ['TALLAHASSEE C.R.C'],
+    'Taylor Correctional Institution Annex': ['TAYLOR ANNEX'],
+    'Tomoka Crc - 285': ['TOMOKA CRC-285'],
+    'Tomoka Crc - 298': ['TOMOKA CRC-298'],
+    'Tth Of Tarpon Springs': ['TTH OF TARPON SPRING'],
+    'Union Correctional Work Camp': ['UNION WORK CAMP'],
+    'Wakulla Correctional Institution Annex': ['WAKULLA ANNEX'],
+    'West Palm Beach Community Release Center': ['W.PALM BEACH C.R.C.'],
+}
+
+common_abbreviations = {
+    'Correctional Institution': 'C.I.',
+    'Correctional Facility': 'C.F.',
+    'Community Release Center': 'C.R.C.',
+    'Road Prison': 'R.P.',
+    'Work Camp': 'W.C.'
 }
 
 class FloridaSpider(scrapy.Spider):
@@ -20,14 +71,15 @@ class FloridaSpider(scrapy.Spider):
     download_delay = 1
 
     def get_alternate_names(self, name):
-        if name in alternate_names:
-            return alternate_names[name]
-
         alts = []
-        if " Correctional Institution" in name:
-            alts.append(name.replace(" Correctional Institution", ""))
-        if " Correctional Facility" in name:
-            alts.append(name.replace(" Correctional Facility", ""))
+        if name in alternate_names:
+            alts = alts + alternate_names[name]
+
+        for find, replace in common_abbreviations.items():
+            if find in name:
+                alts.append(name.replace(find, replace))
+
+        alts = list(set(alts))
         return alts
 
     def is_facility(self, td):
@@ -157,6 +209,9 @@ class FloridaSpider(scrapy.Spider):
                     item['url'] = response.url
 
                 item['organization'] = item['organization'].title()
+                # Fix a problem with .title()... argh.
+                item['organization'] = item['organization'].replace("Women'S", "Women's")
+
                 item['organization'] = re.sub(r'\bci\b', "Correctional Institution", item['organization'], flags=re.I)
                 item['alternate_names'] = self.get_alternate_names(item['organization'])
                 address = parse_address(u"\n".join([item['organization']] + address_lines))
