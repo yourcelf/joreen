@@ -70,7 +70,7 @@ class Search(BaseStateSearch):
                 search_terms=params,
                 raw_facility_name=current_location,
                 status=self.STATUS_INCARCERATED,
-                facilities=Facility.objects.find_by_partial_name("Pennsylvania", current_location),
+                facilities=Facility.objects.find_by_name("Pennsylvania", current_location),
                 extra=dict(
                     race=race,
                     date_of_birth=dob,

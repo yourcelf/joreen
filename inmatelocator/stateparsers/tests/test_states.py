@@ -1,16 +1,10 @@
 from django.test import TestCase
-import requests_cache
-from stateparsers.request_caching import setup_cache
 
 from stateparsers import search
 from stateparsers.models import FacilityNameResult
 
 class TestState(TestCase):
     fixtures = ['facilities.json']
-
-    def setUp(self):
-        requests_cache.uninstall_cache()
-        setup_cache("cache/test_states")
 
     def check_search(self, **terms):
         results = search(self.mod_name, **terms)
@@ -55,7 +49,7 @@ class TestState(TestCase):
 
 class TestCalifornia(TestState):
     admin_name = "California"
-    mod_name = "california"
+    mod_name = "CA"
 
     def test_search(self):
         self.check_search(last_name="johnson")
@@ -70,14 +64,14 @@ class TestFederal(TestState):
 
 class TestFlorida(TestState):
     admin_name = "Florida"
-    mod_name = "florida"
+    mod_name = "FL"
     def test_search(self):
         self.check_search(first_name="john", last_name="smith")
         self.check_search(number="J48121")
 
 class TestNewYork(TestState):
     admin_name = "New York"
-    mod_name = "newyork"
+    mod_name = "NY"
     def test_search(self):
         self.check_search(number="13A1038")
         self.check_search(last_name="mitch")
@@ -85,14 +79,14 @@ class TestNewYork(TestState):
 
 class TestPennsylvania(TestState):
     admin_name = "Pennsylvania"
-    mod_name = "pennsylvania"
+    mod_name = "PA"
     def test_search(self):
         self.check_search(first_name="john")
         self.check_search(number="KA3038")
 
 class TestTexas(TestState):
     admin_name = "Texas"
-    mod_name = "texas"
+    mod_name = "TX"
     def test_search(self):
         self.check_search(first_name="john", last_name="smith")
         self.check_search(number="01715697")

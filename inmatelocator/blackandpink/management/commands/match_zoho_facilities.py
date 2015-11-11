@@ -27,20 +27,12 @@ class Command(BaseCommand):
                     zoho_facility.get('Facility_Type') == 'Federal'):
                 continue
 
-            zoho_url = "https://creator.zoho.com/{}/{}/{}/record-edit/{}/{}".format(
-                    settings.ZOHO_OWNER_NAME,
-                    settings.ZOHO_APPLICATION_LINK_NAME,
-                    settings.ZOHO_FACILITIES_FORM_NAME,
-                    settings.ZOHO_FACILITIES_VIEW_NAME,
-                    zoho_facility['ID'])
-
             current_count = 0
             if zoho_facility['Mailing_Address_Date_Current'] != '[]':
                 current_count = len(zoho_facility['Mailing_Address_Date_Current'].split('],'))
             uf_defaults = {
                 'state': address.state or '',
                 'flat_address': address.flatten(),
-                'zoho_url': zoho_url,
                 'current_address_count': current_count,
                 'address_valid': True,
                 'comment': ''

@@ -20,7 +20,7 @@ alternate_names = {
     'Cross City Correctional Institution': ['CROSS CITY EAST UNIT'],
     'Everglades Re-Entry Center': ['EVERGLADES RE-ENTRY'],
     "Florida Women's Reception Center": ['FL.WOMENS RECPN.CTR'],
-    'Florida State Prison': ['FSP'],
+    'Florida State Prison': ['FSP', 'FL SP'],
     'Florida State Prison West Unit': ['FSP West Unit'],
     'Franklin Work Camp': ['FRANKLIN CI WORK CMP'],
     'Gadsden Re-Entry Center': ['GADSDEN RE-ENTRY CTR'],

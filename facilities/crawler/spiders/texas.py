@@ -10,6 +10,7 @@ import probablepeople
 
 alternate_name_map = {
     "Carole S. Young Medical Facility": ["CAROL YOUNG COMPLEX"],
+    "Christina Melton Crain Unit": ["Crain Unit - Women's Prison"],
     "Diboll Correctional Center": ["DIBOLL PRIV"],
     "East Texas Multi-Use Facility": ["EAST TEXAS TREATMENT FACILITY"],
     "Hospital Galveston": ["HOSPITAL-GALV", "GALVESTON"],
@@ -17,6 +18,7 @@ alternate_name_map = {
     "Beauford H. Jester II Unit": ["JESTER II"],
     "Beauford H. Jester III Unit": ["JESTER III"],
     "Beauford H. Jester IV Unit": ["JESTER IV"],
+    "Billy Moore Correctional Center": ["BMCC"],
     "Joe F. Gurney Transfer Facility": ["JOE F GURNEY"],
     "Joe Kegans State Jail": ["KEGANS STATE J"],
     "John R. Lindsey State Jail": ["LINDSEY SJ"],

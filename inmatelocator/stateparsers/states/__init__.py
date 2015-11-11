@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
-import requests
 
 from stateparsers.models import FacilityNameResult, Facility
+from stateparsers.request_caching import get_caching_session
 from localflavor.us.us_states import STATES_NORMALIZED
 
 class LookupStatus(object):
@@ -34,6 +34,8 @@ class LookupResult(LookupStatus):
         dct['facilities'] = list(map(lambda f: f.to_result_dict(), dct['facilities']))
         return dct
 
+_session = get_caching_session()
+
 class BaseStateSearch(LookupStatus):
 
     # Source URL to report to users
@@ -46,12 +48,10 @@ class BaseStateSearch(LookupStatus):
     # All possible search terms.
     _search_terms = set(["last_name", "first_name", "number"])
 
-    def __init__(self):
-        pass
+    session = _session
 
     def search(self, **kwargs):
         self.check_minimum_terms(kwargs)
-        self.session = requests.Session()
         self.errors = []
         self.results = []
         self.crawl(**kwargs)

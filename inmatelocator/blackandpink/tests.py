@@ -42,7 +42,24 @@ class TestAddressParsing(TestCase):
             'ZipCode': '92301'
         })
 
-
+    def test_tag_texas_address(self):
+        self.assertEquals(dict(Address(
+            name="Reception And Medical Center West Unit",
+            address1="P.O. Box 628",
+            address2="Hwy 231",
+            city="Lake Butler",
+            state="FL",
+            zip="32054-0628"
+        ).tag()), {
+            'Recipient': "Reception And Medical Center West Unit",
+            "USPSBoxType": "P.O. Box",
+            "USPSBoxID": "628\n",
+            "StreetNamePreType": "Hwy",
+            "StreetName": "231\n",
+            "PlaceName": "Lake Butler",
+            "StateName": "FL",
+            "ZipCode": "32054-0628"
+        })
 
 class TestAddressMatching(TestCase):
     fixtures = ['facilities']
@@ -80,14 +97,16 @@ class TestAddressMatching(TestCase):
         byrd_unit_facility = Facility.objects.get(name='James "Jay" H. Byrd Unit')
 
         self.check_address_match(byrd_unit_zoho, byrd_unit_facility, {
-            'name': 100, 'address1': 100, 'street_total': 100, 'city': 100
+            'AddressNumber': 100, 'StreetName': 100,
+            'StreetNamePreType': 100, 'city': 100, 'name': 100,
+            'street_total': 100
         })
         # Mismatched zip
         self.check_address_match(
             self.mod(byrd_unit_zoho, {'Zip': '12345'}),
             byrd_unit_facility,
-            {'city': 100, 'street_total': 100.0, 'name': 100, 'address1': 100,
-             'fatal': 'Mismatched zip'}
+            {'city': 100, 'street_total': 100.0, 'name': 100, 'StreetName': 100,
+                'StreetNamePreType': 100, 'AddressNumber': 100, 'fatal': 'Mismatched zip'}
         )
 
         # Empty facility name
@@ -140,7 +159,8 @@ class TestAddressMatching(TestCase):
         self.check_address_match(
             self.mod(apalachee_east_zoho, {'Address_2': '36 Apalachee Drive'}),
             apalachee_east_facility,
-            {'mismatched AddressNumber': 0,
+            {'AddressNumber': 0,
+             'fatal': 'Mismatched AddressNumber',
              'city': 100,
              'name': 100,
              'street_total': 0}
@@ -198,7 +218,7 @@ class TestAddressMatching(TestCase):
         )
         self.check_address_match(fci_num_1, dvmccf, {
             'city': 100, 'name': 17, 'street_total': 0,
-            'mismatched USPSBoxID': 0
+            'USPSBoxID': 0, 'fatal': 'Mismatched USPSBoxID'
         })
 
 
@@ -219,5 +239,5 @@ class TestAddressMatching(TestCase):
         self.check_address_match(
             san_quentin_zoho,
             Facility.objects.get(name='San Quentin State Prison'),
-            {'city': 100, 'name': 73, 'street_total': 77, 'address1': 77}
+            {'city': 100, 'name': 79, 'street_total': 77, 'address1': 77}
         )

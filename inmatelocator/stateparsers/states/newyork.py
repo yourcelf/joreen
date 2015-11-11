@@ -14,7 +14,7 @@ class Search(BaseStateSearch):
     def get_facilities_and_status(self, facility_name, raw_status):
         if raw_status == "IN CUSTODY":
             status = self.STATUS_INCARCERATED
-            facilities = Facility.objects.find_by_partial_name("New York", facility_name)
+            facilities = Facility.objects.find_by_name("New York", facility_name)
         elif raw_status in ("RELEASED", "DISCHARGED", "TEMP RELEASE"):
             status = self.STATUS_RELEASED
             facilities = Facility.objects.none()

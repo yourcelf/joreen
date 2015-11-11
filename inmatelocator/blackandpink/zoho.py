@@ -6,7 +6,7 @@ import logging
 
 from django.conf import settings
 
-from stateparsers.request_caching import setup_cache
+from stateparsers.request_caching import get_caching_session
 
 def fetch_all_profiles(criteria=None):
     return fetch_all(settings.ZOHO_PROFILE_VIEW_NAME, criteria)
@@ -22,7 +22,7 @@ def fetch_all(view_link_name, criteria=None):
     get out of hand if it re-runs.
     """
 
-    setup_cache(name="cache/zoho")
+    session = get_caching_session(cache_name="cache/zoho")
 
     url = "https://creator.zoho.com/api/json/{application_link_name}/view/{view_link_name}"
     url = url.format(
@@ -38,7 +38,7 @@ def fetch_all(view_link_name, criteria=None):
     if criteria:
         payload["criteria"] = criteria 
 
-    res = requests.get(url, params=payload)
+    res = session.get(url, params=payload)
     if res.status_code != 200:
         raise Exception("Status code {}, {}, {}".format(res.status_code, url, payload))
 
@@ -81,8 +81,8 @@ def update_row(view_link_name, form_name, params):
     }
     payload.update(params)
 
-    with requests_cache.disabled():
-        res = requests.post(url, data=payload)
+    # Don't cache this.
+    res = requests.post(url, data=payload)
 
     return {"status_code": res.status_code, "text": json.loads(res.text)}
 
@@ -101,6 +101,6 @@ def insert_row(view_link_name, form_name, params):
     }
     payload.update(params)
 
-    with requests_cache.disabled():
-        res = requests.post(url, data=payload)
+    # Don't cache this.
+    res = requests.post(url, data=payload)
     return {"status_code": res.status_code, "text": json.loads(res.text)}

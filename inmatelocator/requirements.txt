@@ -9,3 +9,4 @@ fuzzywuzzy
 usaddress
 probablepeople
 pytz
+psycopg2

@@ -340,28 +340,34 @@ class Address(object):
             if haz('zip'): parts.append(self.zip)
         return u"\n".join(parts)
 
+    def _parse_split_recipient(self, flat):
+        lines = flat.split("\n")
+        recipient, others = lines[0], lines[1:]
+        try:
+            parsed, atype = usaddress.tag("\n".join(others))
+        except usaddress.RepeatedLabelError:
+            return None
+        else:
+            if ('USPSBoxID' in parsed or 'AddressNumber' in parsed) and ('Recipient' not in parsed):
+                parsed['Recipient'] = recipient
+            else:
+                parsed = None
+        return parsed
 
     def tag(self):
-        # Special case: ignore addresses with 'Unit' in the name, which texas
-        # has, and usadress borks.
-        if self.name and "Unit" not in self.name:
+        if self.name:
             flat = self.flatten()
             parsed = None
-            try:
-                parsed, atype = usaddress.tag(flat)
-            except usaddress.RepeatedLabelError:
-                lines = flat.split("\n")
-                recipient, others = lines[0], lines[1:]
+            # Special case: usaddress messes up the "Unit" in names, so
+            # separate it before parsing.
+            if "Unit" in self.name:
+                parsed = self._parse_split_recipient(flat)
+            else:
                 try:
-                    parsed, atype = usaddress.tag("\n".join(others))
+                    parsed, atype = usaddress.tag(flat)
                 except usaddress.RepeatedLabelError:
-                    pass
-                else:
-                    if 'USPSBoxID' in parsed or 'AddressNumber' in parsed:
-                        parsed['Recipient'] = recipient
-                    else:
-                        parsed = None
-            
+                    parsed = self._parse_split_recipient(flat)
+                
             # Even if parsing didn't raise an exception, sometimes the results are
             # junky. Make sure that "Recipient" is in there.
             if parsed:
@@ -438,7 +444,7 @@ class Address(object):
 
         # city
         if _both_have("PlaceName"):
-            scores['city'] = fuzz.ratio(a1_tagged[key], a2_tagged[key])
+            scores['city'] = fuzz.ratio(a1_tagged["PlaceName"], a2_tagged["PlaceName"])
 
         # street address
         street_score = {}

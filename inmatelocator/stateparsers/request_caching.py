@@ -1,7 +1,8 @@
 import time
 import logging
 import requests_cache
-from urllib.parse import urlparse
+
+from stateparsers.models import NetlocThrottle
 
 import collections
 from contextlib import contextmanager
@@ -20,72 +21,53 @@ class ThrottleSession(OriginalSession):
     A request session that throttles requests per netloc.
     """
     netloc_log = {}
-    throttle_duration = 1 # seconds
+    throttle_duration = 2 # seconds
     max_retries = 2
 
-    def throttle(self, request):
-        netloc = urlparse(request.url).netloc
-        last_req = self.netloc_log.get(netloc)
-        # Implement as a loop so separate threads sharing this session will
-        # continue to wait.
-        while self.netloc_log.get(netloc) and time.time() - self.netloc_log[netloc] < self.throttle_duration:
-            delay = self.throttle_duration - (time.time() - self.netloc_log[netloc])
-            print("Throttling request to {} for {} seconds.".format(request.url, delay))
-            logging.info(
-                "Throttling request to {} for {} seconds.".format(request.url, delay)
-            )
-            time.sleep(delay)
-        return netloc
-
     def send(self, request, **kwargs):
-        netloc = self.throttle(request)
+        # This method should only be called if a request is *not* cached.  If
+        # that's the case, we want to throttle our upstream requests to play
+        # nice.
 
-        # Set a start time to fend off other threads.
-        self.netloc_log[netloc] = time.time()
-
-        # Try a connection it fails, with a good long pause in between.
+        # Retry a connection if it fails, but with a good long pause in
+        # between.
         retries = 0
         while retries < self.max_retries:
+            NetlocThrottle.objects.block(request.url)
+            # Fend off requests while we make ours.
+            NetlocThrottle.objects.touch(request.url, self.throttle_duration)
+            print("REQUEST:", request.method, request.url, request.body)
             try:
-                print("REQUEST:", request.method, request.url, request.body)
+                # Make the request (actual net traffic)
                 res = super(ThrottleSession, self).send(request, **kwargs)
                 break
-            except requests.exceptions.ConnectionError:
+            except Exception:
                 retries += 1
                 if retries >= self.max_retries:
                     raise
                 else:
                     dur = self.throttle_duration * 5
                     # Signal other threads to hold off while we wait.
-                    self.netloc_log[netloc] = time.time() + dur
-                    time.sleep(dur)
+                    NetlocThrottle.objects.touch(request.url, dur)
                     continue
 
-        # Set the final time.
-        self.netloc_log[netloc] = time.time()
+        # Set the final time for future throttling
+        NetlocThrottle.objects.touch(request.url, self.throttle_duration)
         return res
 
-def setup_cache(name="cache/stateparsers", netloc_throttle=1):
-    """
-    Set up caching for GET and POST, with a custom session factory that
-    throttles requests.
-    """
-
+def get_caching_session(cache_name="cache/stateparsers", netloc_throttle=2):
     class SessionFactory(CachedSession):
         throttle_duration = netloc_throttle
+        def __init__(self):
+            super(SessionFactory, self).__init__(
+                cache_name=cache_name,
+                backend=backends.create_backend(None, cache_name, {}),
+                expire_after=60*60*24,
+                allowable_codes=(200, 301, 302, 307),
+                allowable_methods=('GET', 'POST')
+            )
 
-    requests_cache.install_cache(
-        name,
-        # We allow caching of POST (generally not a good idea) because many of
-        # the prisoner search forms use POST for searches (generally not a good
-        # idea). This means you need to explicitly disable cache when you're
-        # making real POST requests:
-        # https://requests-cache.readthedocs.org/en/latest/api.html#requests_cache.core.disabled
-        allowable_methods=('GET', 'POST'),
-        allowable_codes=(200, 301, 302, 307), # allow all non-error responses to get cached
-        expire_after=60*60*24,
-        session_factory=SessionFactory
-    )
+    return SessionFactory()
 
 ####################################################################################
 # Te below is duplicated from requests_cache so that we can have a session

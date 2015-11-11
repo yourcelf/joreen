@@ -42,7 +42,6 @@ class UpdateRun(models.Model):
 
 class MemberProfile(models.Model):
     bp_member_number = models.IntegerField()
-    zoho_url = models.CharField(max_length=255)
 
     def zoho_url(self):
         return "https://creator.zoho.com/{}/{}/{}/record-edit/{}/{}".format(
@@ -142,7 +141,7 @@ class UnknownFacility(models.Model):
         return mark_safe("<pre style='display: inline-block'>{}</pre>".format(escape(self.flat_address)))
 
     def __str__(self):
-        return self.zoho_url
+        return self.zoho_url()
 
     class Meta:
         verbose_name_plural = "Unknown Facilities"
@@ -168,7 +167,10 @@ class UnknownFacilityMatch(models.Model):
         return self.match.flat_address()
 
     def facility_source_url(self):
-        return self.match.provenance_url or self.match.provenance
+        if self.match.provenance_url:
+            url = escape(self.match.provenance_url)
+            return mark_safe('<a href="{}" target="_blank">{}</a>'.format(url, url))
+        return self.match.provenance
 
     class Meta:
         ordering = ['-score']

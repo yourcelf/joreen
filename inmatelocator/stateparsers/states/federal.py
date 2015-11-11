@@ -13,8 +13,6 @@ class Search(BaseStateSearch):
     minimum_search_terms = [["last_name", "first_name"], ["number"]]
 
     def crawl(self, **kwargs):
-        print(kwargs)
-
         searches = []
         if kwargs.get('number'):
             for numtype in ("IRN", "DCDC", "FBI", "INS"):

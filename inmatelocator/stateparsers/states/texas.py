@@ -82,11 +82,12 @@ class Search(BaseStateSearch):
                     numbers['sid_number'] = match.group(1)
 
                 unit_of_assignment = "".join(row.xpath('./td[6]/text()'))
-                if unit_of_assignment:
+                if unit_of_assignment == "TEMP RELEASE":
+                    status = self.STATUS_RELEASED
+                    facilities = Facility.objects.none()
+                elif unit_of_assignment:
                     status = self.STATUS_INCARCERATED
-                    facilities = Facility.objects.filter(
-                            administrator__name="Texas",
-                            name__icontains=self.normalize_name(unit_of_assignment))
+                    facilities = Facility.objects.find_by_name("Texas", unit_of_assignment)
                 else:
                     status = self.STATUS_UNKNOWN
                     facilities = Facility.objects.none()

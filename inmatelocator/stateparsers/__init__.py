@@ -22,5 +22,5 @@ def get_searcher(state_name):
     )
 
 def search(state_name, **kwargs):
-    Search = get_searcher(state_name)
+    Searcher = get_searcher(state_name)
     return Searcher().search(**kwargs)

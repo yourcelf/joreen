@@ -69,9 +69,14 @@ class Search(BaseStateSearch):
 
             current_facility = "".join(tds[6].xpath('.//text()')).strip()
 
-            facilities = Facility.objects.find_by_name(
-                "Florida", current_facility
-            )
+            if current_facility == "OUT OF DEPT. CUSTODY BY COURT ORDER":
+                status = self.STATUS_RELEASED
+                facilities = Facility.objects.none()
+            else:
+                status = self.STATUS_INCARCERATED
+                facilities = Facility.objects.find_by_name(
+                    "Florida", current_facility
+                )
 
             self.add_result(
                 name=name,

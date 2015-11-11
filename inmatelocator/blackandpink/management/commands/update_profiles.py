@@ -11,7 +11,6 @@ from stateparsers import AVAILABLE_STATES
 from blackandpink import zoho
 from blackandpink.blackandpink import Address, Profile, FacilityDirectory
 from blackandpink.models import UpdateRun, MemberProfile, ContactCheck
-from stateparsers.request_caching import setup_cache
 
 
 lock = threading.Lock()
@@ -76,13 +75,10 @@ class Command(BaseCommand):
            "attempt to find current addresses, and update them if needed."
 
     def handle(self, *args, **options):
-        num_worker_threads = 8
+        num_worker_threads = 1
         # Fetch the profiles.
         zoho_profiles = zoho.fetch_all_profiles()
         print("Profiles fetched")
-
-        # Set up requests cacheing for searchers to avoid abusing endpoints
-        setup_cache()
 
         # Create our update run model to store results.
         update_run = UpdateRun.objects.create(errors=[])

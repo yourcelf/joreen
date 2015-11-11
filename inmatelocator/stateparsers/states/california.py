@@ -1,12 +1,13 @@
 import re
 import lxml.html
-import requests_cache
 
 from localflavor.us.us_states import STATES_NORMALIZED
 
 from stateparsers.states import BaseStateSearch
+from stateparsers.request_caching import ThrottleSession
 from facilities.models import Facility
 
+_session = ThrottleSession()
 
 class Search(BaseStateSearch):
     administrator_name = "California"
@@ -14,12 +15,10 @@ class Search(BaseStateSearch):
     url = "http://inmatelocator.cdcr.ca.gov/search.aspx"
     auth_url = "http://inmatelocator.cdcr.ca.gov/default.aspx"
 
-    def search(self, **kwargs):
-        # California doesn't cache well with its terms interstitial.  Attempts
-        # to work around have thus been unsuccessful, so just disable cache for
-        # this state.
-        with requests_cache.disabled():
-            return super(Search, self).search(**kwargs)
+    # California doesn't cache well with its terms interstitial.  Attempts
+    # to work around have thus been unsuccessful, so just disable cache for
+    # this state.
+    session = _session
 
     def crawl(self, **kwargs):
 
@@ -82,30 +81,10 @@ class Search(BaseStateSearch):
                 status=self.STATUS_INCARCERATED,
                 raw_facility_name=current_location,
                 facility_url=current_location_url,
+                facilities = Facility.objects.find_by_name("California", current_location),
                 extra=dict(
                     age="".join(row.xpath('(./td)[3]/text()')),
                     admission_date=''.join(row.xpath('(./td)[4]/text()')),
                     map_url=''.join(row.xpath('(./td)[6]/a/@href')),
                 )
             )
-
-            # Try to find facility matches.
-            match_code = re.search("/Facilities_Locator/(\w+).html", current_location_url)
-            if match_code:
-                code = match_code.group(1)
-                if code == "Community_Correctional_Facilities":
-                    result.facilities = Facility.objects.find_by_name("California",
-                            current_location)
-                else:
-                    result.facilities = Facility.objects.filter(code=code,
-                            administrator__name='California')
-
-            elif "CA_Out_Of_State" in current_location_url and " - " in current_location:
-                name, state_abbr = current_location.split(" - ")
-                state = self.get_state(state_abbr)
-                if state:
-                    result.facilities = Facility.objects.find_by_name(
-                            "California", name, state=state)
-            else:
-                self.errors.append("Unknown facility: {}, {}".format(
-                    current_location, current_location_url))
