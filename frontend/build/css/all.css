@@ -2078,5 +2078,6 @@ td.visible-print,th.visible-print{display:table-cell!important}
 .addresses h2{margin-top:1rem;font-size:1.5rem}
 .address-lines,.provenance{font-size:smaller}
 .addresses .general-heading{font-weight:700;font-style:italic;font-size:smaller}
+.address+.address{margin-top:.5em}
 .address-lines{white-space:pre;font-family:monospace}
 /*# sourceMappingURL=all.css.map */

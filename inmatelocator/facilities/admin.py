@@ -1,25 +1,33 @@
 from django.contrib import admin
 
 from facilities.models import *
+from inmatelocator.admin_base import BaseAdmin
 
 class AlternateNameInline(admin.StackedInline):
     model = AlternateName
+    readonly_fields = ['name']
+    extra = 0
+    max_num = 0
 
-class FacilityAdmin(admin.ModelAdmin):
-    list_display = ['name', 'code', 'state', 'address1', 'administrator', 'operator', 'type', 'general']
-    list_filter = ['general', 'administrator', 'state', 'type', 'operator']
+class FacilityAdmin(BaseAdmin):
+    list_display = ['name', 'code', 'state', 'address1', 'administrator', 'general']
+    list_filter = ['general', 'administrator', 'operator', 'state', 'type']
     search_fields = ['code', 'name', 'address1', 'address2', 'address3', 'city', 'state', 'zip']
+    readonly_fields = ['code', 'name', 'city', 'address1', 'address2', 'address3', 'state', 'zip', 'phone', 'general', 'type', 'administrator', 'operator', 'provenance', 'provenance_url']
     inlines = [AlternateNameInline]
 admin.site.register(Facility, FacilityAdmin)
 
-class FacilityAdministratorAdmin(admin.ModelAdmin):
+class FacilityAdministratorAdmin(BaseAdmin):
     search_fields = ['name']
-admin.site.register(FacilityAdministrator, FacilityAdministratorAdmin)
+    readonly_fields = ['name']
+#admin.site.register(FacilityAdministrator, FacilityAdministratorAdmin)
 
-class FacilityOperatorAdmin(admin.ModelAdmin):
+class FacilityOperatorAdmin(BaseAdmin):
     search_fields = ['name']
-admin.site.register(FacilityOperator, FacilityOperatorAdmin)
+    readonly_fields = ['name']
+#admin.site.register(FacilityOperator, FacilityOperatorAdmin)
 
-class FacilityTypeAdmin(admin.ModelAdmin):
+class FacilityTypeAdmin(BaseAdmin):
     search_fields = ['name']
-admin.site.register(FacilityType, FacilityTypeAdmin)
+    readonly_fields = ['name']
+#admin.site.register(FacilityType, FacilityTypeAdmin)

@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'stateparsers',
     'blackandpink',
     'api',
+
 )
 
 MIDDLEWARE_CLASSES = (
@@ -60,7 +61,7 @@ ROOT_URLCONF = 'inmatelocator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'inmatelocator', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -108,3 +109,11 @@ STATIC_URL = '/static/'
 
 SCRAPY_DIR = os.path.join(BASE_DIR, "..", "facilities")
 SCRAPY_BIN = os.path.join(SCRAPY_DIR, "venv", "bin", "scrapy")
+
+# Celery
+CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+BROKER_URL = 'django://'
+INSTALLED_APPS += (
+  'djcelery',
+  'kombu.transport.django'
+)

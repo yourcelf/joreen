@@ -9,6 +9,7 @@ const del = require("del")
 const eslint = require("gulp-eslint")
 const filter = require("gulp-filter")
 const gulp = require("gulp")
+const historyApiFallback = require('connect-history-api-fallback')
 const less = require("gulp-less")
 const minifyCSS = require("gulp-minify-css")
 const nib = require("nib")
@@ -91,7 +92,8 @@ gulp.task("watch-lint", ["lint"], function() {
 gulp.task("watch", ["build"], function(cb) {
   browserSync.init({
     server: {
-      baseDir: "./build"
+      baseDir: "./build",
+      middleware: [ historyApiFallback() ]
     }
   })
 

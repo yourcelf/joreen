@@ -9,10 +9,16 @@ from django.utils.safestring import mark_safe
 from django.conf import settings
 from jsonfield import JSONField
 
+class FinishedManager(models.Manager):
+    def get_unfinished(self):
+        return self.get(finished__isnull=True)
+
 class UpdateRun(models.Model):
     started = models.DateTimeField(auto_now_add=True)
-    finished = models.DateTimeField(blank=True, null=True)
+    finished = models.DateTimeField(blank=True, null=True, unique=True)
     errors = JSONField()
+
+    objects = FinishedManager()
 
     def not_found(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.not_found).count()
@@ -60,6 +66,8 @@ class MemberProfile(models.Model):
 class ContactCheck(models.Model):
     class STATUS:
        not_found = "not_found"
+       found_released_zoho_agrees = "found_released_zoho_agrees"
+       found_released_zoho_disagrees = "found_released_zoho_disagrees"
        found_unknown_facility = "found_unknown_facility"
        found_facility_matches = "found_facility_matches"
        found_facility_differs_zoho_has = "found_facility_differs_zoho_has"
@@ -79,7 +87,9 @@ class ContactCheck(models.Model):
         (STATUS.found_unknown_facility, "Found search result, but facility unknown"),
         (STATUS.found_facility_matches, "Found, facility matches zoho's"),
         (STATUS.found_facility_differs_zoho_has, "Found, facility differs, zoho has facility"),
-        (STATUS.found_facility_differs_zoho_lacks, "Found, facility differs, zoho lacks facility")
+        (STATUS.found_facility_differs_zoho_lacks, "Found, facility differs, zoho lacks facility"),
+        (STATUS.found_released_zoho_agrees, "Found, released, zoho agrees"),
+        (STATUS.found_released_zoho_disagrees, "Found, released, zoho disagrees"),
     ))
 
     created = models.DateTimeField(auto_now_add=True)
@@ -94,11 +104,22 @@ class ContactCheck(models.Model):
         return " ".join((self.entry_before.get('First_Name'), self.entry_before.get('Last_Name')))
 
     class Meta:
+        verbose_name = 'Member address check'
+        verbose_name_plural = 'Member address checks'
         ordering = ['-created']
         get_latest_by = 'created'
 
     def __str__(self):
         return "{} {} {}".format(self.member, self.status, self.created.strftime("%Y-%m-%d"))
+
+class FacilityRun(models.Model):
+    started = models.DateTimeField(auto_now_add=True)
+    finished = models.DateTimeField(blank=True, null=True, unique=True)
+
+    objects = FinishedManager()
+
+    def __str__(self):
+        return "{} {}".format(self.started, self.finished)
 
 class UnknownFacility(models.Model):
     zoho_id = models.CharField(max_length=255, unique=True)
@@ -144,7 +165,8 @@ class UnknownFacility(models.Model):
         return self.zoho_url()
 
     class Meta:
-        verbose_name_plural = "Unknown Facilities"
+        verbose_name = "Unmatched Black and Pink Facility"
+        verbose_name_plural = "Unknown Black and Pink Facilities"
         ordering = ['-current_address_count']
 
 class UnknownFacilityMatch(models.Model):
@@ -154,14 +176,24 @@ class UnknownFacilityMatch(models.Model):
     breakdown = JSONField()
 
     def breakdown_description(self):
+        if 'fatal' in self.breakdown:
+            text = "Rejected because of {}".format(self.breakdown['fatal'])
+        elif self.breakdown.get('street_total', 100) < 90:
+            text = "Rejected because the address match score is too low."
+        elif self.breakdown.get('street_total', 100) == 100 and \
+                self.breakdown.get('name', 100) < 50:
+            text = "Rejected because the name match score is too low."
+        else:
+            text = ""
+
         breakdown = {}
         breakdown.update(self.breakdown)
         parts = []
         if 'fatal' in breakdown:
-            parts.append('<li><b>fatal</b>: {}'.format(breakdown.pop('fatal')))
+            breakdown.pop('fatal')
         for v,k in sorted([(v, k) for k,v in breakdown.items()]):
-            parts.append("<li><b>{}</b>: {}</li>".format(escape(k.replace('_', ' ')), escape(v)))
-        return mark_safe("<ul>{}</ul>".format("\n".join(parts)))
+            parts.append("<li>{}: {}</li>".format(escape(k.replace('_', ' ')), escape(v)))
+        return mark_safe("<p><b>{}</b></p><p>Match scores:</p><ul>{}</ul>".format(text, "\n".join(parts)))
 
     def facility_address(self):
         return self.match.flat_address()
@@ -173,6 +205,8 @@ class UnknownFacilityMatch(models.Model):
         return self.match.provenance
 
     class Meta:
+        verbose_name = 'Rejected facility match'
+        verbose_name_plural = 'Rejected facility matches'
         ordering = ['-score']
 
 #def choices(*args):

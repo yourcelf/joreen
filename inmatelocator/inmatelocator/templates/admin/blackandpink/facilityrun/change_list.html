@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+  <ul class='object-tools'>
+    {% if facilityrun_started %}
+      <li>Update run in progress, started {{ facilityrun_started }} GMT</li>
+    {% else %}
+      <li><a href='{% url "start_update_run" %}'>+ Start Facility Run</a></li>
+    {% endif %}
+  </ul>
+{% endblock %}

@@ -39,7 +39,7 @@ def search_job(update_run, member, profile, facility_directory):
     else:
         administrator = None
 
-    if profile_match.result and profile_match.status != profile_match.NOT_FOUND:
+    if profile_match.result and profile_match.status != ContactCheck.STATUS.not_found:
         raw_facility_name = profile_match.result.raw_facility_name or ""
     else:
         raw_facility_name = ""
@@ -52,8 +52,9 @@ def search_job(update_run, member, profile, facility_directory):
         entry_after="...",
         search_result=profile_match.result.to_dict() if profile_match.result else None,
         entry_changed=profile_match.status in (
-            profile_match.FOUND_FACILITY_DIFFERS_ZOHO_HAS,
-            profile_match.FOUND_FACILITY_DIFFERS_ZOHO_LACKS
+            ContactCheck.STATUS.found_facility_differs_zoho_has,
+            ContactCheck.STATUS.found_facility_differs_zoho_lacks,
+            ContactCheck.STATUS.found_released_zoho_disagrees,
         ),
         facility=profile_match.facility_match.facility if profile_match.facility_match else None,
         administrator=administrator,

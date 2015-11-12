@@ -2,7 +2,9 @@
 import _ from 'lodash';
 import React from 'react';
 import {render} from 'react-dom';
-import {Row, Col, Input, Button} from 'react-bootstrap';
+import {Nav, Navbar, NavBrand, NavItem, Row, Col, Input, Button} from 'react-bootstrap';
+import {Router, Route, Link, IndexRoute} from 'react-router';
+import createBrowserHistory from 'history/lib/createBrowserHistory';
 
 import xhr from './xhr.js';
 import conf from './conf.js';
@@ -84,7 +86,7 @@ const pushQueryargs = function(terms) {
   }
 };
 
-const App = React.createClass({
+const Search = React.createClass({
   getInitialState() {
     let queryargs = readQueryargs();
     return {
@@ -173,7 +175,6 @@ const App = React.createClass({
     return (
       <div>
         <Col xs={12} sm={7}>
-          <h1>Inmate Locator</h1>
           <p>Search for people incarcerated in <span>{stateList.join(", ")}</span>.</p>
         </Col>
         <Col xs={12}>
@@ -285,7 +286,7 @@ const SearchResultList = React.createClass({
     let results = _.map(this.props.searchResults, (result) => (
       <div className='result' key={fmtKey(result)}>
         <div>
-          <span className='name'>{result.name}</span>,{' '}
+          <span className='name'>{result.name}</span>{' '}
           <span className='numbers'>{fmtNumbers(result)}</span>
         </div>
         <div className='status'>
@@ -340,6 +341,53 @@ const SearchesLoading = React.createClass({
   }
 });
 
+const About = React.createClass({
+  render() {
+    return (
+      <Row sm={6} smoffset={3}>
+        <h1>About</h1>
+        <p>
+          This inmate locator works by directly searching various official
+          inmate search tools, to take away some of the hassle and
+          inconsistency of finding people who are moved frequently. It was
+          designed with the generous support of
+          {' '}<a href='http://www.blackandpink.org/'>Black and Pink</a>{' '}
+          for the benefit of organizations that support people in prison.
+        </p>
+        <p>
+          Are you interested in supporting this tool, or helping us to add
+          additional states?  Please
+          {' '}<a href='mailto:inmatelocator@fohn.org'>contact us</a>.
+        </p>
+      </Row>
+    )
+  }
+});
 
-const app = render(<App searchTerms={{}} searchResults={{}} searchesLoading={{}} />,
-                   document.getElementById('app'));
+const App = React.createClass({
+  render() {
+    return (
+      <div>
+        <Navbar>
+          <NavBrand><Link to='/'><Fa type='search' /> Inmate Locator</Link></NavBrand>
+          <Nav>
+            <li><Link to='/about/'>About</Link></li>
+          </Nav>
+        </Navbar>
+        <div className='container'>
+          {this.props.children}
+        </div>
+      </div>
+    );
+  }
+});
+
+const app = render(
+  <Router history={createBrowserHistory()}>
+    <Route path="/" component={App}>
+      <IndexRoute component={Search} />
+      <Route path="about" component={About} />
+    </Route>
+  </Router>
+  , document.getElementById('app')
+);

@@ -10,3 +10,5 @@ usaddress
 probablepeople
 pytz
 psycopg2
+celery
+django-celery

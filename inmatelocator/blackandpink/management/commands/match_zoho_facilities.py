@@ -6,7 +6,7 @@ from django.conf import settings
 from stateparsers import AVAILABLE_STATES
 from blackandpink import zoho
 from blackandpink.blackandpink import Address
-from blackandpink.models import UnknownFacility, UnknownFacilityMatch
+from blackandpink.models import UnknownFacility, UnknownFacilityMatch, FacilityRun
 
 class Command(BaseCommand):
     help = "Attempt to match all zoho facilities with known facilities, and " \
@@ -14,6 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         zoho_facilities = zoho.fetch_all_facilities()
+        facility_run = FacilityRun.objects.create()
 
         found = 0
         existing_unknown = 0
@@ -75,3 +76,6 @@ class Command(BaseCommand):
                 # relevant by asserting that this list of ufm's is the whole
                 # set.
                 uf.unknownfacilitymatch_set = ufms
+
+        facility_run.finished = timezone.now()
+        facility_run.save()

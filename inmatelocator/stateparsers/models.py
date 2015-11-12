@@ -62,8 +62,6 @@ class FacilityNameResult(models.Model):
     name = models.CharField(max_length=255)
     facility_url = models.CharField(max_length=255, blank=True,
             help_text="URL to the facility in question if provided by search site")
-    facility = models.ForeignKey(Facility, blank=True, null=True,
-            help_text="Set to manually associate a string with a facility, preempting other ways to guess at the identity of this facility.")
 
     created = models.DateTimeField(auto_now_add=True)
 
@@ -77,3 +75,5 @@ class FacilityNameResult(models.Model):
 
     class Meta:
         app_label = 'stateparsers'
+        verbose_name = "Facility name reported by search backend"
+        verbose_name_plural = "Facility names reported by search backends"

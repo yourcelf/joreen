@@ -72,5 +72,5 @@ class FederalSpider(scrapy.Spider):
                     item['identifier'], addresses_by_type.keys()
                 )
             )
-            item['state'] = ''
+            return None
         return item

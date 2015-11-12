@@ -10,6 +10,7 @@ from facilities.models import Facility
 import stateparsers
 from stateparsers.states import BaseStateSearch
 from blackandpink import zoho
+from blackandpink.models import ContactCheck
 
 class ProfileMatchResultSet(object):
     def __init__(self, profile):
@@ -55,11 +56,6 @@ class ProfileMatchResultSet(object):
         return match
 
 class ProfileMatchResult(object):
-    FOUND_UNKNOWN_FACILITY = "found_unknown_facility"
-    NOT_FOUND = "not_found"
-    FOUND_FACILITY_DIFFERS_ZOHO_HAS = "found_facility_differs_zoho_has"
-    FOUND_FACILITY_DIFFERS_ZOHO_LACKS = "found_facility_differs_zoho_lacks"
-    FOUND_FACILITY_MATCHES = "found_facility_matches"
 
     def __init__(self, profile=None, score=0, result=None, breakdown=None,
                  source=None, params=None):
@@ -77,14 +73,24 @@ class ProfileMatchResult(object):
 
     def classify(self, facility_directory):
         if self.result is None or self.score <= 90:
-            self.status = self.NOT_FOUND
+            self.status = ContactCheck.STATUS.not_found
             self.facility_match = None
             return
+
+        if self.result and self.result.status == self.result.STATUS_RELEASED:
+            if self.profile.status in ("Released", "Deceased"):
+                self.status = ContactCheck.STATUS.found_released_zoho_agrees
+                self.facility_match = None
+                return
+            else:
+                self.status = ContactCheck.STATUS.found_released_zoho_disagrees
+                self.facility_match = None
+                return
 
         # Compare addresses of matched facilities
         matched_facilities = list(self.result.facilities)
         if len(matched_facilities) == 0:
-            self.status = self.FOUND_UNKNOWN_FACILITY
+            self.status = ContactCheck.STATUS.found_unknown_facility
             self.facility_match = None
             return
 
@@ -92,7 +98,7 @@ class ProfileMatchResult(object):
         for facility in matched_facilities:
             match = self.profile.address.compare_to_facility(facility)
             if match.is_valid():
-                self.status = self.FOUND_FACILITY_MATCHES
+                self.status = ContactCheck.STATUS.found_facility_matches
                 self.facility_match = match
                 return
 
@@ -107,23 +113,25 @@ class ProfileMatchResult(object):
         zoho_matches = []
         facility_match = facility_directory.get_by_facility(facility)
         if facility_match:
-            self.status = self.FOUND_FACILITY_DIFFERS_ZOHO_HAS
+            self.status = ContactCheck.STATUS.found_facility_differs_zoho_has
             self.facility_match = facility_match
             return
         else:
-            self.status = self.FOUND_FACILITY_DIFFERS_ZOHO_LACKS
+            self.status = ContactCheck.STATUS.found_facility_differs_zoho_lacks
             self.facility_match = AddressFacilityMatch(None, None, None, facility)
             return
 
 class Profile(object):
     def __init__(self, bp_member_number, number='', first_name='',
-            middle_name='', last_name='', suffix='', **address_args):
+            middle_name='', last_name='', suffix='', status='', 
+            **address_args):
         self.bp_member_number = bp_member_number
         self.number = number
         self.first_name = first_name
         self.middle_name = middle_name
         self.last_name = last_name
         self.suffix = suffix
+        self.status = status
         if address_args:
             self.address = Address(**address_args)
         else:
@@ -181,7 +189,8 @@ class Profile(object):
     def from_zoho(self, kwargs):
         u = {
             'number': kwargs.get('Number', None),
-            'bp_member_number': kwargs.get('B_P_Member_Number', None)
+            'bp_member_number': kwargs.get('B_P_Member_Number', None),
+            'status': kwargs.get('Status', None)
         }
         for key in ("First_Name", "Middle_Name", "Last_Name", "Suffix"):
             u[key.lower()] = kwargs.get(key, '')
