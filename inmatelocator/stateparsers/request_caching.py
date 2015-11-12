@@ -36,7 +36,7 @@ class ThrottleSession(OriginalSession):
             NetlocThrottle.objects.block(request.url)
             # Fend off requests while we make ours.
             NetlocThrottle.objects.touch(request.url, self.throttle_duration)
-            print("REQUEST:", request.method, request.url, request.body)
+            #print("REQUEST:", request.method, request.url, request.body)
             try:
                 # Make the request (actual net traffic)
                 res = super(ThrottleSession, self).send(request, **kwargs)

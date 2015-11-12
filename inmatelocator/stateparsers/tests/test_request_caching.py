@@ -13,7 +13,6 @@ class TestRequestCaching(TestCase):
 
     def test_uses_cache(self):
         start = time.time()
-        print(start)
         # not cached, not throttled
         res = self.session.get("http://asdf.com/")
         self.assertFalse(getattr(res, "from_cache", None))

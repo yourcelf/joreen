@@ -21,10 +21,10 @@ class NetlocThrottleManager(models.Manager):
 
         delta = model.wait_until - time.time()
         if delta <= 0:
-            print("RELEASE", url, time.time())
+            #print("RELEASE", url, time.time())
             return False
 
-        print("Waiting...", url, time.time(), delta)
+        #print("Waiting...", url, time.time(), delta)
         time.sleep(delta)
         return self.block(url)
 
