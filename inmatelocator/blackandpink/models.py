@@ -50,6 +50,9 @@ class UpdateRun(models.Model):
     def __str__(self):
         return self.started.strftime("%Y-%m-%d, %H:%M")
 
+    class Meta:
+        ordering = ['-started']
+
 class MemberProfile(models.Model):
     bp_member_number = models.IntegerField()
 
@@ -125,6 +128,9 @@ class FacilityRun(models.Model):
     def __str__(self):
         return "{} {}".format(self.started, self.finished)
 
+    class Meta:
+        ordering = ['-started']
+
 class UnknownFacility(models.Model):
     zoho_id = models.CharField(max_length=255, unique=True)
     current_address_count = models.IntegerField(help_text="How many profiles are listed with this as the current address?")
@@ -169,8 +175,8 @@ class UnknownFacility(models.Model):
         return self.zoho_url()
 
     class Meta:
-        verbose_name = "Unmatched Black and Pink Facility"
-        verbose_name_plural = "Unknown Black and Pink Facilities"
+        verbose_name = "Unmatched zoho facilities"
+        verbose_name_plural = "Unmatched zoho facilities"
         ordering = ['-current_address_count']
 
 class UnknownFacilityMatch(models.Model):
