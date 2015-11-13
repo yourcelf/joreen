@@ -71,7 +71,7 @@ class CaliforniaSpider(scrapy.Spider):
         }
         if url == "http://www.cdcr.ca.gov/Facilities_Locator/Community_Correctional_Facilities.html":
             content_hacks['Female Community Reentry Facility'] = 'McFarland Female Community Reentry Facility'
-        if url == "http://www.cdcr.ca.gov/Facilities_Locator/ASP.html":
+        if url == "http://www.cdcr.ca.gov/Facilities_Locator/ASP-location.html":
             content_hacks['Facility A -901'] = "Facility A, PO Box 901"
             content_hacks['Facility B -902'] = "Facility B, PO Box 902"
             content_hacks['Facility C -903'] = "Facility C, PO Box 903"
@@ -85,11 +85,11 @@ class CaliforniaSpider(scrapy.Spider):
 
         # Regular checks
         esc = lambda p: re.escape(p).replace(r"\ ", r"\s+")
-        po_box = lambda p: esc(p).replace("PO\s+Box\s+", r"P\.?O\.?\s+B[Oo][Xx]\s+")
+        po_box = lambda p: esc(p).replace("PO\s+Box\s+", r"P\.?O\.?\s+Box\s+")
         checks = {
             'organization': r"{}".format(esc(entry['organization'])),
-            'address1': r"{}([\s,]|\b)".format(po_box(entry['address1'])),
-            'address2': r"{}".format(po_box(entry['address2'])),
+            'address1': r"{}([^\d]|$)".format(po_box(entry['address1'])),
+            'address2': r"{}([^\d]|$)".format(po_box(entry['address2'])),
             'city': r"{}".format(esc(entry['city'])),
             'zip': r"{}".format(esc(entry['zip']))
         }
