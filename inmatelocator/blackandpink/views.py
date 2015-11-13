@@ -18,7 +18,7 @@ def start_update_run(request):
     return HttpResponse("Started")
 
 # Create your views here.
-@permission_required('updaterun.add_updaterun')
+@permission_required('updaterun.add_facilityrun')
 def start_facility_run(request):
     try:
         current = FacilityRun.objects.get_unfinished()
@@ -27,6 +27,6 @@ def start_facility_run(request):
     if current is not None:
         return HttpResponse("Facility Run Started: {}".format(current.started.isoformat()))
 
-    blackandpink.tasks.do_update_run.delay()
+    blackandpink.tasks.do_facility_run.delay()
     return HttpResponse("Started")
 

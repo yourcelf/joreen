@@ -1,5 +1,5 @@
 from django.core.management import call_command
-from blackandpink.models import UpdateRun
+from blackandpink.models import UpdateRun, FacilityRun
 
 from celery import shared_task
 
