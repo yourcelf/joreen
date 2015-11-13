@@ -23,17 +23,21 @@ class UpdateRun(models.Model):
     def not_found(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.not_found).count()
 
-    def found_unknown_fac(self):
+    def unknown_fac(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_unknown_facility).count()
 
-    def found_fac_matches(self):
+    def fac_matches(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_matches).count()
 
-    def found_fac_differs_zoho_has(self):
+    def fac_differs_zoho_has(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_has).count()
 
-    def found_fac_differs_zoho_lacks(self):
+    def fac_differs_zoho_lacks(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_lacks).count()
+    def released_zoho_agrees(self):
+        return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_released_zoho_agrees).count()
+    def released_zoho_disagrees(self):
+        return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_released_zoho_disagrees).count()
 
     def num_errors(self):
         return len(self.errors)
