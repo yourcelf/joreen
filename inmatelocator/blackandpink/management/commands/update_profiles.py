@@ -82,7 +82,7 @@ class Command(BaseCommand):
         print("Profiles fetched")
 
         # Create our update run model to store results.
-        update_run = UpdateRun.objects.create(errors=[])
+        update_run = UpdateRun.objects.create(errors=[], total_count=len(zoho_profiles))
 
         # Fetch a mapping of zoho facilit
         facility_directory = FacilityDirectory()

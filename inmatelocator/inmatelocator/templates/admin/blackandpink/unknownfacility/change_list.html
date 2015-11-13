@@ -3,8 +3,9 @@
 {% block object-tools %}
   <ul class='object-tools'>
     {% if facilityrun_started %}
-      <li>Update run in progress, started {{ facilityrun_started }} GMT</li>
+      <li>Facility run in progress, started {{ facilityrun_started }}</li>
     {% else %}
+    <li>Last updated {{ facilityrun_latest.finished }}</li>
       <li><a href='{% url "start_facility_run" %}'>+ Start Facility Run</a></li>
     {% endif %}
   </ul>

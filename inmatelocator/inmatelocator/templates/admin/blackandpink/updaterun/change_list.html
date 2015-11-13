@@ -3,7 +3,7 @@
 {% block object-tools %}
   <ul class='object-tools'>
     {% if updaterun_started %}
-      <li>Update run in progress, started {{ updaterun_started }} GMT</li>
+      <li>Update run in progress, started {{ updaterun_started }}</li>
     {% else %}
       <li><a href='{% url "start_update_run" %}'>+ Start Update Run</a></li>
     {% endif %}

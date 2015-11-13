@@ -11,14 +11,24 @@ from jsonfield import JSONField
 
 class FinishedManager(models.Manager):
     def get_unfinished(self):
-        return self.get(finished__isnull=True)
+        try:
+            return self.filter(finished__isnull=True)[0]
+        except IndexError:
+            raise self.model.DoesNotExist
 
 class UpdateRun(models.Model):
     started = models.DateTimeField(auto_now_add=True)
     finished = models.DateTimeField(blank=True, null=True, unique=True)
+    total_count = models.IntegerField()
     errors = JSONField()
 
     objects = FinishedManager()
+
+    def complete(self):
+        if self.total_count == 0:
+            return "0%"
+        count = self.contactcheck_set.count()
+        return '{:2.1f}%'.format(100 * count / self.total_count) if count > 0 else "0%"
 
     def not_found(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.not_found).count()
@@ -28,19 +38,22 @@ class UpdateRun(models.Model):
 
     def fac_matches(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_matches).count()
+    fac_matches.short_description = "Same"
 
-    def fac_differs_zoho_has(self):
-        return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_has).count()
+    def moved(self):
+        return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_has).count() + self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_lacks).count()
 
-    def fac_differs_zoho_lacks(self):
-        return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_facility_differs_zoho_lacks).count()
     def released_zoho_agrees(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_released_zoho_agrees).count()
+    released_zoho_agrees.short_description = "prev released"
+
     def released_zoho_disagrees(self):
         return self.contactcheck_set.filter(status=ContactCheck.STATUS.found_released_zoho_disagrees).count()
+    released_zoho_disagrees.short_description = "newly released"
 
     def num_errors(self):
         return len(self.errors)
+    num_errors.short_description = "crawl errors"
 
     def show_errors(self):
         dumped = json.dumps(self.errors, indent=4)
@@ -130,6 +143,7 @@ class FacilityRun(models.Model):
 
     class Meta:
         ordering = ['-started']
+        get_latest_by = 'finished'
 
 class UnknownFacility(models.Model):
     zoho_id = models.CharField(max_length=255, unique=True)
@@ -175,7 +189,7 @@ class UnknownFacility(models.Model):
         return self.zoho_url()
 
     class Meta:
-        verbose_name = "Unmatched zoho facilities"
+        verbose_name = "Unmatched zoho facility"
         verbose_name_plural = "Unmatched zoho facilities"
         ordering = ['-current_address_count']
 

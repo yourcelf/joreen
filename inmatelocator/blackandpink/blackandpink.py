@@ -365,28 +365,13 @@ class Address(object):
 
     def tag(self):
         if self.name:
-            flat = self.flatten()
-            parsed = None
-            # Special case: usaddress messes up the "Unit" in names, so
-            # separate it before parsing.
-            if "Unit" in self.name:
-                parsed = self._parse_split_recipient(flat)
-            else:
-                try:
-                    parsed, atype = usaddress.tag(flat)
-                except usaddress.RepeatedLabelError:
-                    parsed = self._parse_split_recipient(flat)
+            # Parse without recipient for more reliable results.
+            parsed = self._parse_split_recipient(self.flatten())
                 
             # Even if parsing didn't raise an exception, sometimes the results are
             # junky. Make sure that "Recipient" is in there.
-            if parsed:
-                if 'Recipient' in parsed:
-                    return parsed
-                # Sometimes the recipient gets stuffed into the PO Box type,
-                # especially if the recipient is an acronym.
-                if 'USPSBoxType' in parsed and '\n' in parsed['USPSBoxType']:
-                    parsed['Recipient'], parsed['USPSBoxType'] = parsed['USPSBoxType'].split('\n')
-                    return parsed
+            if parsed and 'Recipient' in parsed:
+                return parsed
 
         return {
             'usaddress_bailed': True,
@@ -453,7 +438,8 @@ class Address(object):
 
         # city
         if _both_have("PlaceName"):
-            scores['city'] = fuzz.ratio(a1_tagged["PlaceName"], a2_tagged["PlaceName"])
+            scores['city'] = fuzz.ratio(_address_part_norm(a1_tagged["PlaceName"]),
+                                        _address_part_norm(a2_tagged["PlaceName"]))
 
         # street address
         street_score = {}

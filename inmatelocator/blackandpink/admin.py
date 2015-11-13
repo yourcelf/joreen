@@ -6,11 +6,10 @@ from inmatelocator.admin_base import BaseAdmin
 class UpdateRunAdmin(BaseAdmin):
     list_display = [
         'started',
-        'finished', 
+        'complete', 
 
         'fac_matches',
-        'fac_differs_zoho_has',
-        'fac_differs_zoho_lacks',
+        'moved',
         'released_zoho_agrees',
         'released_zoho_disagrees',
         'unknown_fac',
@@ -21,9 +20,9 @@ class UpdateRunAdmin(BaseAdmin):
     readonly_fields = [
         'started',
         'finished',
+        'complete',
         'fac_matches',
-        'fac_differs_zoho_has',
-        'fac_differs_zoho_lacks',
+        'moved',
         'released_zoho_agrees',
         'released_zoho_disagrees',
         'unknown_fac',
@@ -48,30 +47,16 @@ class UpdateRunAdmin(BaseAdmin):
     
 admin.site.register(UpdateRun, UpdateRunAdmin)
 
-class FacilityRunAdmin(BaseAdmin):
-    list_display = ['started', 'finished']
-    readonly_fields = ['started', 'finished']
-    def changelist_view(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        try:
-            started = FacilityRun.objects.get_unfinished()
-        except FacilityRun.DoesNotExist:
-            started = None
-        if started:
-            extra_context['facilityrun_started'] = started.started
-        else:
-            extra_context['facilityrun_started'] = None
-        return super(FacilityRunAdmin, self).changelist_view(request, extra_context)
-admin.site.register(FacilityRun, FacilityRunAdmin)
+#class FacilityRunAdmin(BaseAdmin):
+#    list_display = ['started', 'finished']
+#    readonly_fields = ['started', 'finished']
+#admin.site.register(FacilityRun, FacilityRunAdmin)
     
 
-class MemberProfileAdmin(BaseAdmin):
-    list_display = ['bp_member_number', 'zoho_url', 'current_status']
-    search_fields = ['bp_member_number']
-    readonly_fields = ['bp_member_number', 'zoho_url', 'current_status']
-    def has_add_permission(self, request):
-        return False
+#class MemberProfileAdmin(BaseAdmin):
+#    list_display = ['bp_member_number', 'zoho_url', 'current_status']
+#    search_fields = ['bp_member_number']
+#    readonly_fields = ['bp_member_number', 'zoho_url', 'current_status']
 #admin.site.register(MemberProfile, MemberProfileAdmin)
 
 class ContactCheckAdmin(BaseAdmin):
@@ -100,6 +85,18 @@ class UnknownFacilityAdmin(BaseAdmin):
     readonly_fields = ['created', 'zoho_id', 'current_address_count', 'zoho_address', 'address_valid', 'comment', 'state', 'zoho_url_link','google_it']
     inlines = [UnknownFacilityMatchInline]
     exclude = ['zoho_url', 'flat_address']
-    def has_add_permission(self, request):
-        return False
+
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context['facilityrun_latest'] = FacilityRun.objects.latest()
+        try:
+            started = FacilityRun.objects.get_unfinished()
+        except FacilityRun.DoesNotExist:
+            started = None
+        if started:
+            extra_context['facilityrun_started'] = started.started
+        else:
+            extra_context['facilityrun_started'] = None
+        return super(UnknownFacilityAdmin, self).changelist_view(request, extra_context)
 admin.site.register(UnknownFacility, UnknownFacilityAdmin)
