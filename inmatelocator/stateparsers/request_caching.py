@@ -1,8 +1,10 @@
+import os
 import time
 import logging
 import requests_cache
 
 from stateparsers.models import NetlocThrottle
+from django.conf import settings
 
 import collections
 from contextlib import contextmanager
@@ -56,6 +58,7 @@ class ThrottleSession(OriginalSession):
         return res
 
 def get_caching_session(cache_name="cache/stateparsers", netloc_throttle=2):
+    cache_name = os.path.join(settings.BASE_DIR, cache_name)
     class SessionFactory(CachedSession):
         throttle_duration = netloc_throttle
         def __init__(self):
