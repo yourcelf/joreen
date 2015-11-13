@@ -87,7 +87,7 @@ class Command(BaseCommand):
 
         # Instantiate profile objects for each zoho dict
         profiles = []
-        for zoho_profile in zoho_profiles[0:100]:
+        for zoho_profile in zoho_profiles:
             profile = Profile.from_zoho(zoho_profile)
             # FIXME: allow federal from all states.
             if not profile.address or (profile.address.state not in AVAILABLE_STATES):
