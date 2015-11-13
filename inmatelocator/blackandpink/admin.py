@@ -20,6 +20,7 @@ class UpdateRunAdmin(BaseAdmin):
     readonly_fields = [
         'started',
         'finished',
+        'total_count',
         'complete',
         'fac_matches',
         'moved',

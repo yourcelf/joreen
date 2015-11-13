@@ -81,20 +81,24 @@ class Command(BaseCommand):
         zoho_profiles = zoho.fetch_all_profiles()
         print("Profiles fetched")
 
-        # Create our update run model to store results.
-        update_run = UpdateRun.objects.create(errors=[], total_count=len(zoho_profiles))
-
         # Fetch a mapping of zoho facilit
         facility_directory = FacilityDirectory()
         print("Facility directory fetched")
 
-        # Queue up the search jobs to perform.
-        for zoho_profile in zoho_profiles:
+        # Instantiate profile objects for each zoho dict
+        profiles = []
+        for zoho_profile in zoho_profiles[0:100]:
             profile = Profile.from_zoho(zoho_profile)
             # FIXME: allow federal from all states.
             if not profile.address or (profile.address.state not in AVAILABLE_STATES):
                 continue
+            profiles.append(profile)
 
+        # Create our update run model to store results.
+        update_run = UpdateRun.objects.create(errors=[], total_count=len(profiles))
+
+        # Queue up workers.
+        for profile in profiles:
             member, created = MemberProfile.objects.get_or_create(
                     bp_member_number=profile.bp_member_number)
 
