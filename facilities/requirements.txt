@@ -1,6 +1,6 @@
 scrapy
 addresscleaner
 fuzzywuzzy
-probablepeople
+probablepeople==0.3.1
 usaddress
 python-levenshtein
