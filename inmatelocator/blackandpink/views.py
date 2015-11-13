@@ -5,7 +5,7 @@ from blackandpink.models import UpdateRun, FacilityRun
 import blackandpink.tasks
 
 # Create your views here.
-@permission_required('updaterun.add_updaterun')
+@permission_required('blackandpink.add_updaterun')
 def start_update_run(request):
     try:
         current = UpdateRun.objects.get_unfinished()
@@ -18,7 +18,7 @@ def start_update_run(request):
     return HttpResponse("Started")
 
 # Create your views here.
-@permission_required('updaterun.add_facilityrun')
+@permission_required('blackandpink.add_facilityrun')
 def start_facility_run(request):
     try:
         current = FacilityRun.objects.get_unfinished()
