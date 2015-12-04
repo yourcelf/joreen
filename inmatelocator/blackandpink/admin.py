@@ -56,8 +56,8 @@ admin.site.register(UpdateRun, UpdateRunAdmin)
 
 #class MemberProfileAdmin(BaseAdmin):
 #    list_display = ['bp_member_number', 'zoho_url', 'current_status']
-#    search_fields = ['bp_member_number']
-#    readonly_fields = ['bp_member_number', 'zoho_url', 'current_status']
+#    search_fields = ['bp_member_number', 'zoho_id']
+#    readonly_fields = ['bp_member_number', 'zoho_id', 'zoho_url', 'current_status']
 #admin.site.register(MemberProfile, MemberProfileAdmin)
 
 class ContactCheckAdmin(BaseAdmin):

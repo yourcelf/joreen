@@ -43,7 +43,6 @@ class Facility(models.Model):
         help_text="Canonical name for the facility")
     address1 = models.CharField(max_length=255, blank=True)
     address2 = models.CharField(max_length=255, blank=True)
-    address3 = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=255)
     state = USPostalCodeField()
     zip = USZipCodeField()
@@ -63,7 +62,7 @@ class Facility(models.Model):
 
     def to_result_dict(self):
         out = {}
-        for key in ["id", "code", "name", "address1", "address2", "address3", "city", "state", "zip", "phone", "general", "provenance", "provenance_url"]:
+        for key in ["id", "code", "name", "address1", "address2", "city", "state", "zip", "phone", "general", "provenance", "provenance_url"]:
             out[key] = getattr(self, key)
         out["formatted_address"] = self.flat_address()
         out["administrator"] = self.administrator.name if self.administrator else ""
@@ -77,7 +76,6 @@ class Facility(models.Model):
         if haz('name'): parts.append(self.name)
         if haz('address1'): parts.append(self.address1)
         if haz('address2'): parts.append(self.address2)
-        if haz('address3'): parts.append(self.address3)
 
         if haz('city') and haz('state') and haz('zip'):
             parts.append("{}, {}  {}".format(self.city, self.state, self.zip))

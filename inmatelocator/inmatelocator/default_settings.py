@@ -118,3 +118,6 @@ INSTALLED_APPS += (
   'djcelery',
   'kombu.transport.django'
 )
+
+SITE_URL = "https://joreen.tirl.org"
+MOCK_ZOHO_UPDATES = True

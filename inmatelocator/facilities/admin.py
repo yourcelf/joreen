@@ -12,8 +12,8 @@ class AlternateNameInline(admin.StackedInline):
 class FacilityAdmin(BaseAdmin):
     list_display = ['name', 'code', 'state', 'address1', 'administrator', 'general']
     list_filter = ['general', 'administrator', 'operator', 'state', 'type']
-    search_fields = ['code', 'name', 'address1', 'address2', 'address3', 'city', 'state', 'zip']
-    readonly_fields = ['code', 'name', 'city', 'address1', 'address2', 'address3', 'state', 'zip', 'phone', 'general', 'type', 'administrator', 'operator', 'provenance', 'provenance_url']
+    search_fields = ['code', 'name', 'address1', 'address2', 'city', 'state', 'zip']
+    readonly_fields = ['code', 'name', 'city', 'address1', 'address2', 'state', 'zip', 'phone', 'general', 'type', 'administrator', 'operator', 'provenance', 'provenance_url']
     inlines = [AlternateNameInline]
 admin.site.register(Facility, FacilityAdmin)
 

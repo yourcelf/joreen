@@ -83,6 +83,9 @@ class TestPennsylvania(TestState):
     def test_search(self):
         self.check_search(first_name="john")
         self.check_search(number="KA3038")
+        # Make sure caching works by re-running.
+        self.check_search(first_name="john")
+        self.check_search(number="KA3038")
 
 class TestTexas(TestState):
     admin_name = "Texas"

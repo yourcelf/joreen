@@ -24,7 +24,7 @@ class Search(BaseStateSearch):
         return status, facilities
 
     def crawl(self, **kwargs):
-        res = requests.get(self.url)
+        res = self.session.get(self.url)
         root = lxml.html.fromstring(res.text)
         dfh_state_token = root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0]
 
@@ -83,7 +83,7 @@ class Search(BaseStateSearch):
                     "din1": root.xpath("//input[@name='din1']/@value")[0],
                 }
                 url = self.url + "/GCA00P00/WIQ2/WINQ120"
-                res = requests.post(url, post_data)
+                res = self.session.post(url, post_data)
             if "Identifying and Location Information" in res.text:
 
                 facility_name = "".join(root.xpath("//td[@headers='t1g']/text()")).strip()

@@ -38,7 +38,6 @@ class Command(BaseCommand):
                     'code': entry.get('identifier') or '',
                     'address1': entry.get('address1') or '',
                     'address2': entry.get('address2') or '',
-                    'address3': entry.get('address3') or '',
                     'city': entry.get('city') or '',
                     'state': entry.get('state') or '',
                     'zip': entry.get('zip') or ''

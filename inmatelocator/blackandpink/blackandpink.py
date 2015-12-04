@@ -137,6 +137,9 @@ class Profile(object):
         else:
             self.address = None
 
+    def status_is_searchable(self):
+        return self.status not in ("Deceased", "Released")
+
     def search(self):
         if not self.address:
             search_args = []
@@ -281,7 +284,8 @@ class Address(object):
     }
 
     def __init__(self, name=None, address1=None, address2=None, city=None,
-            state=None, zip=None, alternate_names=None, **noise):
+            state=None, zip=None, alternate_names=None,
+            zoho_id=None, zoho_key=None, **noise):
         if state:
             state = BaseStateSearch.get_state(state)
         self.name = name
@@ -291,6 +295,8 @@ class Address(object):
         self.state = state
         self.zip = zip
         self.alternate_names = alternate_names or []
+        self.zoho_id = zoho_id
+        self.zoho_key = zoho_key
 
         self.zip = re.sub('[^\d-]', '', self.zip)
 
@@ -320,6 +326,10 @@ class Address(object):
             'city': z[prefix + 'City'].strip(),
             'state': z[prefix + 'State'].strip(),
             'zip': z[prefix + 'Zip'].strip(),
+            # Only full zoho facility objects have the ID; profiles have a
+            # non-unique key as a concatenation of the Facility/Address2/city/state/zip.
+            'zoho_id': z['ID'] if not prefix else None,
+            'zoho_key': z['Facility'] if prefix else z['Facility_Add2_City_State_Zip']
         }
         if a['name'] and not a['address1']:
             a['address1'] = a['name']
@@ -550,9 +560,7 @@ class Address(object):
          - breakdown: a dict explaining components that went into the score.
          - facility: a facility object, or None.
         """
-        facilities = Facility.objects.filter(
-            state=self.state
-        )
+        facilities = Facility.objects.filter(state=self.state)
         if constrain_zip:
             facilities = Facility.objects.filter(zip__icontains=self.zip[0:5])
         matches = []
@@ -580,20 +588,44 @@ class FacilityDirectory(object):
     def __init__(self):
         self.matches = {}
         self.facilities = {}
+        self.facility_types = {}
         for zoho_facility in zoho.fetch_all_facilities():
-            key = zoho_facility['Facility_Add2_City_State_Zip']
-            address = Address.from_zoho(zoho_facility)
-            matches = address.find_matching_facilities(constrain_zip=True)
-            for match in matches:
-                if match.is_valid():
-                    match.zoho_facility = zoho_facility
-                    self.facilities[match.facility.id] = match
-                    found = True
-                    self.matches[key] = match
-                    break
-            else:
-                self.matches[key] = AddressFacilityMatch(
-                    address=address, facility=None, score=0, breakdown=None)
+            self.add_facility(zoho_facility)
+
+    def add_facility(self, zoho_facility):
+        key = zoho_facility['Facility_Add2_City_State_Zip']
+        # There are duplicate addresses.  Prefer the ones that have more
+        # contacts.
+        if key in self.matches:
+            existing = self.matches[key].zoho_facility
+            if (len(zoho_facility['Mailing_Address_Date_Current']) <=
+                    len(existing['Mailing_Address_Date_Current'])):
+                return
+
+        self.facility_types[key] = (
+            self.facility_types.get(key) or zoho_facility['Facility_Type']
+        )
+        address = Address.from_zoho(zoho_facility)
+        matches = address.find_matching_facilities(constrain_zip=True)
+        for match in matches:
+            if match.is_valid():
+                match.zoho_facility = zoho_facility
+                self.facilities[match.facility.id] = match
+                found = True
+                self.matches[key] = match
+                break
+        else:
+            self.matches[key] = AddressFacilityMatch(
+                address=address, facility=None, score=0, breakdown=None)
+            self.matches[key].zoho_facility = zoho_facility
+
+    def get_facility_type(self, key=None, zoho_profile=None):
+        if key:
+            return self.facility_types.get(key)
+        elif zoho_profile:
+            return self.facility_types.get(zoho_profile['Facility'])
+        else:
+            raise Exception("Need a lookup key or zoho profile")
 
     def get_by_zoho_address(self, zoho_address):
         for lookup in ('Facility_Add2_City_State_Zip', 'Facility'):
