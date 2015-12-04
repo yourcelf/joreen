@@ -12,6 +12,9 @@ from blackandpink.blackandpink import Address, Profile, FacilityDirectory
 from blackandpink.models import UpdateRun, MemberProfile, ContactCheck
 
 def log_exception(update_run, exception, member_number):
+    """
+    Serialize the exception in the given update_run.
+    """
     print(exception)
     print(traceback.format_exc())
     update_run.errors.append({
@@ -21,7 +24,11 @@ def log_exception(update_run, exception, member_number):
     })
     update_run.save()
 
-def search(update_run, member, profile, facility_directory):
+def search(update_run, profile, member, facility_directory):
+    """
+    Search for the given profile with the relevant state and federal DoC
+    backends.  Construct a ContactCheck instance logging the results.
+    """
     match_result_set = profile.search() 
     profile_match = match_result_set.best()
     profile_match.classify(facility_directory)
@@ -61,8 +68,12 @@ def search(update_run, member, profile, facility_directory):
         administrator=administrator,
         status=profile_match.status,
     )
+    return cc
 
 def update_zoho(cc, facility_directory):
+    """
+    Update zoho with the results of the given ContactCheck.
+    """
     address_key = None
     address_status = None
     release_status = None
@@ -80,8 +91,10 @@ def update_zoho(cc, facility_directory):
         # Even if at time of creating the contact check the facility didn't
         # exist, it might have been added already.  Try finding it in the
         # facility directory.
-        zoho_facility = facility_directory.get_by_facility(cc.facility)
-        if not zoho_facility:
+        facility_match = facility_directory.get_by_facility(cc.facility)
+        if facility_match:
+            zoho_facility = facility_match.zoho_facility
+        else:
             # Add the joreen facility to zoho.
             zoho_facility = zoho.add_facility(cc.facility)
             # Add the zoho result to our in-memory directory for further processing.
@@ -110,79 +123,120 @@ def update_zoho(cc, facility_directory):
         zoho_facility_key=address_key)
     cc.save()
 
+def get_searchable_profiles(facility_directory, excluded_states=None):
+    """
+    Collect all the profiles from zoho that we are able to search: profiles
+    that have the correct address type, in the right states, who are not marked
+    as released.
+    """
+    excluded_states = set(excluded_states or [])
+    # Fetch the profiles.
+    zoho_profiles = zoho.fetch_all_profiles()
+    print("Profiles fetched")
+
+    # Instantiate profile objects for each zoho dict
+    searchable_profiles = []
+    for zoho_profile in zoho_profiles:
+        profile = Profile.from_zoho(zoho_profile)
+        # Exclude people without addresses
+        if not profile.address:
+            continue
+
+        # Exclude released and deceased people
+        if not profile.status_is_searchable():
+            continue
+
+        # Exclude personal addresses and non-prison addresses
+        facility_type = facility_directory.get_facility_type(zoho_profile=zoho_profile)
+        if facility_type not in ("State", "Federal", "Detention Center",
+                "State Prison- Hospital", "County Jail", "", None):
+            continue
+
+        # Skip excluded states (e.g. skipping uncachable states during testing)
+        if profile.address.state in excluded_states:
+            continue
+
+        # Exclude non-federal addresses outside available states
+        if facility_type != "Federal" and profile.address.state not in AVAILABLE_STATES:
+            continue
+
+        # Proceed!
+        searchable_profiles.append(profile)
+        profile.member, created = MemberProfile.objects.update_or_create(
+            bp_member_number=profile.bp_member_number,
+            defaults={
+                'bp_member_number': profile.bp_member_number,
+                'zoho_id': zoho_profile['ID']
+            }
+        )
+    return searchable_profiles
+
+def do_searches(update_run, facility_directory, searchable_profiles):
+    """
+    Execute searches for all the searchable_profiles given.
+    """
+    for profile in searchable_profiles:
+        try:
+            cc = search(
+                    update_run=update_run,
+                    facility_directory=facility_directory,
+                    profile=profile,
+                    member=profile.member)
+        except Exception as e:
+            log_exception(update_run, e, kwargs['member'].bp_member_number)
+            continue
+    print("Searches complete")
+
+def do_zoho_updates(update_run, facility_directory):
+    """
+    Execute zoho updates for all ContactCheck's associated with the given
+    update_run.
+    """
+    for cc in ContactCheck.objects.filter(update_run=update_run, entry_after=""):
+        try:
+            update_zoho(cc, facility_directory)
+        except Exception as e:
+            log_exception(update_run, e, cc.member.bp_member_number)
+            continue
+    print("Zoho updates complete")
+
+    update_run.finished = timezone.now()
+    update_run.save()
+
+#
+# Command
+#
 class Command(BaseCommand):
     help = "Search for all profiles from zoho in respective DOC search sites, " \
            "attempt to find current addresses, and update them if needed."
 
-    def handle(self, *args, **options):
-        num_worker_threads = 1
-        # Fetch the profiles.
-        zoho_profiles = zoho.fetch_all_profiles()
-        print("Profiles fetched")
+    def add_arguments(self, parser):
+        # Arguments for debugging: limit the number of profiles, and exclude
+        # profiles from states which are not cachable.
+        parser.add_argument('--limit', nargs='?', type=int)
+        parser.add_argument('--exclude-uncachable', action='store_true')
 
-        # Fetch a mapping of zoho facilit
+    def handle(self, *args, **options):
+
+        # Fetch a mapping of zoho facilities to joreen facilities.
         facility_directory = FacilityDirectory()
         print("Facility directory fetched")
 
-        # Instantiate profile objects for each zoho dict
-        profiles = []
-        for zoho_profile in zoho_profiles:
-            profile = Profile.from_zoho(zoho_profile)
-            # Exclude people without addresses
-            if not profile.address:
-                continue
-
-            # Exclude released and deceased people
-            if not profile.status_is_searchable():
-                continue
-
-            # Exclude personal addresses and non-prison addresses
-            facility_type = facility_directory.get_facility_type(zoho_profile=zoho_profile)
-            if facility_type not in ("State", "Federal", "Detention Center",
-                    "State Prison- Hospital", "County Jail", "", None):
-                continue
-
-            # Exclude non-federal addresses outside available states
-            if facility_type != "Federal" and profile.address.state not in AVAILABLE_STATES:
-                continue
-
-            # Proceed!
-            profiles.append(profile)
+        if options['exclude_uncachable']:
+            excluded_states = ['CA']
+        else:
+            excluded_states = []
+        profiles = get_searchable_profiles(facility_directory,
+                excluded_states=excluded_states)
+        if options['limit']:
+            profiles = profiles[:options['limit']]
 
         # Create our update run model to store results.
         update_run = UpdateRun.objects.create(errors=[], total_count=len(profiles))
-
-        search_queue = []
-        for profile in profiles:
-            member, created = MemberProfile.objects.update_or_create(
-                    bp_member_number=profile.bp_member_number,
-                    defaults={
-                        'bp_member_number': profile.bp_member_number,
-                        'zoho_id': profile.zoho_profile['ID'],
-                    })
-            search_queue.append({
-                'update_run': update_run,
-                'member': member,
-                'profile': profile,
-                'facility_directory': facility_directory
-            })
-        print("MemberProfile instances updated")
-
-        for kwargs in search_queue:
-            try:
-                search(**kwargs)
-            except Exception as e:
-                log_exception(update_run, e, kwargs['member'].bp_member_number)
-                continue
-        print("Searches complete")
-
-        for cc in ContactCheck.objects.filter(update_run=update_run, entry_after=""):
-            try:
-                update_zoho(cc, facility_directory)
-            except Exception as e:
-                log_exception(update_run, e, cc.member.bp_member_number)
-                continue
-        print("Zoho updates complete")
-
-        update_run.finished = timezone.now()
-        update_run.save()
+        try:
+            do_searches(update_run, facility_directory, profiles)
+            do_zoho_updates(update_run, facility_directory)
+        except Exception:
+            update_run.finished = timezone.now()
+            update_run.save()
+            raise

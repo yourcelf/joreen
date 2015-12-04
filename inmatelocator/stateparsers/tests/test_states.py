@@ -7,11 +7,15 @@ class TestState(TestCase):
     fixtures = ['facilities.json']
 
     def check_search(self, **terms):
-        results = search(self.mod_name, **terms)
-        self.assertTrue(len('results') > 0)
-        self.assertEquals(results['errors'], [])
-        for res in results['results']:
-            self.check_result(res, **terms)
+        # Do each two times to make sure that the caching aparatus doesn't
+        # bork.  Searches that don't support caching will hit twice, those that
+        # do support caching should just return instantly.
+        for i in range(2):
+            results = search(self.mod_name, **terms)
+            self.assertTrue(len('results') > 0)
+            self.assertEquals(results['errors'], [])
+            for res in results['results']:
+                self.check_result(res, **terms)
 
     def check_result(self, res, **kwargs):
         for name_part in ('last_name', 'first_name'):
@@ -81,9 +85,6 @@ class TestPennsylvania(TestState):
     admin_name = "Pennsylvania"
     mod_name = "PA"
     def test_search(self):
-        self.check_search(first_name="john")
-        self.check_search(number="KA3038")
-        # Make sure caching works by re-running.
         self.check_search(first_name="john")
         self.check_search(number="KA3038")
 

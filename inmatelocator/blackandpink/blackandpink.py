@@ -94,27 +94,39 @@ class ProfileMatchResult(object):
             self.facility_match = None
             return
 
-        # Does one of the returned facilities match the current address?
+        # Compare the matched facilities to our current address.
+        facility_comparison = []
         for facility in matched_facilities:
             match = self.profile.address.compare_to_facility(facility)
-            if match.is_valid():
-                self.status = ContactCheck.STATUS.found_facility_matches
-                self.facility_match = match
-                return
+            facility_comparison.append(
+                self.profile.address.compare_to_facility(facility)
+            )
+        facility_comparison.sort(
+            key=lambda m: (m.is_valid(), m.score),
+            reverse=True
+        )
+        best_match = facility_comparison[0]
 
-        # Facility differs. Pick one of the matched results to use.
+        # Is the best match for the current zoho address a valid match? If so,
+        # the contact's current address is OK.
+        if best_match.is_valid():
+            self.status = ContactCheck.STATUS.found_facility_matches
+            self.facility_match = best_match
+            return
+
+        # The current facility differs from zoho's.  Pick one of the facilities
+        # to use.  If one of the searched facilities is "general", use that. If
+        # not, fall back to the facility most similar to our current address.
         try:
-            facility = [f for f in matched_facilities if f.general][0]
+            facility = [m.facility for m in facility_comparison if m.facility.general][0]
         except IndexError:
-            # Arbitrarily pick one. :(
-            facility = matched_facilities[0]
+            facility = best_match.facility
 
-        # Does zoho have our facility?
-        zoho_matches = []
-        facility_match = facility_directory.get_by_facility(facility)
-        if facility_match:
+        # Does zoho have this facility?
+        existing_facility_match = facility_directory.get_by_facility(facility)
+        if existing_facility_match:
             self.status = ContactCheck.STATUS.found_facility_differs_zoho_has
-            self.facility_match = facility_match
+            self.facility_match = existing_facility_match
             return
         else:
             self.status = ContactCheck.STATUS.found_facility_differs_zoho_lacks
@@ -587,7 +599,7 @@ class AddressFacilityMatch(object):
 class FacilityDirectory(object):
     def __init__(self):
         self.matches = {}
-        self.facilities = {}
+        self.facility_matches = {}
         self.facility_types = {}
         for zoho_facility in zoho.fetch_all_facilities():
             self.add_facility(zoho_facility)
@@ -610,7 +622,7 @@ class FacilityDirectory(object):
         for match in matches:
             if match.is_valid():
                 match.zoho_facility = zoho_facility
-                self.facilities[match.facility.id] = match
+                self.facility_matches[match.facility.id] = match
                 found = True
                 self.matches[key] = match
                 break
@@ -637,4 +649,4 @@ class FacilityDirectory(object):
         return self.matches.get(key)
 
     def get_by_facility(self, facility):
-        return self.facilities.get(facility.id)
+        return self.facility_matches.get(facility.id)

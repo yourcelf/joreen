@@ -6,11 +6,11 @@ from inmatelocator.admin_base import BaseAdmin
 class UpdateRunAdmin(BaseAdmin):
     list_display = [
         'started',
+        'finished',
         'complete', 
 
         'fac_matches',
         'moved',
-        'released_zoho_agrees',
         'released_zoho_disagrees',
         'unknown_fac',
         'not_found',
@@ -24,7 +24,6 @@ class UpdateRunAdmin(BaseAdmin):
         'complete',
         'fac_matches',
         'moved',
-        'released_zoho_agrees',
         'released_zoho_disagrees',
         'unknown_fac',
         'not_found',

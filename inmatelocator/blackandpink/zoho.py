@@ -124,6 +124,7 @@ def update_row(view_link_name, form_name, params):
     payload.update(params)
 
     if settings.MOCK_ZOHO_UPDATES:
+        print("UPDATE", payload)
         return {
             "status_code": 200,
             "text": {'formname': ['', {'operation': ['update', {'values': {}}]}]}
@@ -148,6 +149,7 @@ def insert_row(view_link_name, form_name, params):
     payload.update(params)
 
     if settings.MOCK_ZOHO_UPDATES:
+        print("INSERT", payload)
         return {'status_code': 200, 'text': {
             'formname': ['Prison_Facilities', {
                 'operation': ['add', {
