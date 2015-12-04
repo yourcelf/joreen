@@ -218,6 +218,13 @@ class FloridaSpider(scrapy.Spider):
                 item['address1'] = address['address1']
                 if 'address2' in address:
                     item['address2'] = address['address2']
+
+                # Special case: if there's only a number as address1, it's a
+                # line that was improperly split between address1 and address2.
+                # Join them together again.
+                if re.match(r'^\d+$', item['address1']):
+                    item['address1'] = u" ".join((item['address1'], item['address2']))
+                    item['address2'] = ''
                 item['city'] = address['city']
                 item['state'] = address['state']
                 item['zip'] = address['zip']
@@ -255,5 +262,13 @@ class FloridaSpider(scrapy.Spider):
                 else:
                     raise Exception(item['organization'])
 
+                # Special case: there are two addresses for Union Correctional Work Camp.  Clone the item.
+                if item['address1'] == "7819 NW 228th Street" and item['address2'] == "13600 NW 258th Court":
+                    item2 = FacilityItem()
+                    for k,v in item.iteritems():
+                        item2[k] = v
+                    item2['address1'], item2['address2'] = item2['address2'], ''
+                    item['address2'] = ''
+                    yield item2
                 yield item
 

@@ -10,7 +10,6 @@ class FacilityItem(scrapy.Item):
     organization = scrapy.Field()
     address1 = scrapy.Field()
     address2 = scrapy.Field()
-    address3 = scrapy.Field()
     alternate_names = scrapy.Field()
     city = scrapy.Field()
     state = scrapy.Field()
