@@ -217,23 +217,25 @@ class Command(BaseCommand):
         parser.add_argument('--exclude-uncachable', action='store_true')
 
     def handle(self, *args, **options):
-
-        # Fetch a mapping of zoho facilities to joreen facilities.
-        facility_directory = FacilityDirectory()
-        print("Facility directory fetched")
-
-        if options['exclude_uncachable']:
-            excluded_states = ['CA']
-        else:
-            excluded_states = []
-        profiles = get_searchable_profiles(facility_directory,
-                excluded_states=excluded_states)
-        if options['limit']:
-            profiles = profiles[:options['limit']]
-
         # Create our update run model to store results.
-        update_run = UpdateRun.objects.create(errors=[], total_count=len(profiles))
+        update_run = UpdateRun.objects.create(errors=[], total_count=0)
+
         try:
+            # Fetch a mapping of zoho facilities to joreen facilities.
+            facility_directory = FacilityDirectory()
+            print("Facility directory fetched")
+
+            if options['exclude_uncachable']:
+                excluded_states = ['CA']
+            else:
+                excluded_states = []
+            profiles = get_searchable_profiles(facility_directory,
+                    excluded_states=excluded_states)
+            if options['limit']:
+                profiles = profiles[:options['limit']]
+            update_run.total_count = len(profiles)
+            update_run.save()
+
             do_searches(update_run, facility_directory, profiles)
             do_zoho_updates(update_run, facility_directory)
         except Exception:
