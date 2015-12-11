@@ -101,6 +101,8 @@ def update_profile(update_url, zoho_profile_id, address_status, release_status=N
         settings.ZOHO_PROFILE_FORM_NAME,
         params
     )
+    if result['status_code'] != 200:
+        raise Exception("POST error: {}. Params: {}".format(result, params))
     return fetch_all_profiles(criteria='ID=={}'.format(zoho_profile_id))
 
 def update_row(view_link_name, form_name, params):
