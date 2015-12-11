@@ -335,6 +335,7 @@ class Address(object):
         a = {
             'name': z[prefix + 'Address_1_Facility'].strip(),
             'address1': z[prefix + 'Address_2'].strip(),
+            'address2': z[prefix + 'Address_4'].strip(),
             'city': z[prefix + 'City'].strip(),
             'state': z[prefix + 'State'].strip(),
             'zip': z[prefix + 'Zip'].strip(),

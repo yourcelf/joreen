@@ -75,7 +75,7 @@ def add_facility(facility):
         {
             'Address_1_Facility': facility.name,
             'Address_2': facility.address1,
-            'Address_3': facility.address2 or '',
+            'Address_4': facility.address2 or '',
             'Facility_Type': address_type,
             'City': facility.city,
             'State': facility.state,

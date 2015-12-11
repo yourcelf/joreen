@@ -6,6 +6,10 @@ from blackandpink.models import UpdateRun
 class Command(BaseCommand):
     help = "Mark an UpdateRun as finished."
     def handle(self, *args, **options):
-        ur = UpdateRun.objects.get_unfinished()
-        ur.finished = timezone.now()
-        ur.save()
+        while True:
+            try:
+                ur = UpdateRun.objects.get_unfinished()
+                ur.finished = timezone.now()
+                ur.save()
+            except UpdateRun.DoesNotExist:
+                break
