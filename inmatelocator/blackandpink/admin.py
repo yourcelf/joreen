@@ -64,7 +64,7 @@ class ContactCheckAdmin(BaseAdmin):
     list_filter = ['status', 'entry_changed', 'administrator', 'update_run']
     search_fields = ['member__bp_member_number', 'raw_facility_name']
     date_hierarchy = 'created'
-    readonly_fields = ['update_run', 'member', 'contact_name', 'raw_facility_name', 'facility', 'administrator', 'entry_before', 'entry_after', 'search_result', 'entry_changed', 'status']
+    readonly_fields = ['update_run', 'member', 'contact_name', 'raw_facility_name', 'facility', 'administrator', 'changes', 'entry_before', 'entry_after', 'search_result', 'entry_changed', 'status']
     def has_add_permission(self, request):
         return False
 admin.site.register(ContactCheck, ContactCheckAdmin)

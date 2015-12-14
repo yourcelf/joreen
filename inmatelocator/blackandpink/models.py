@@ -131,6 +131,31 @@ class ContactCheck(models.Model):
     def contact_name(self):
         return " ".join((self.entry_before.get('First_Name'), self.entry_before.get('Last_Name')))
 
+    def changes(self):
+        before = self.entry_before
+        after = self.entry_after[0] if isinstance(self.entry_after, list) else self.entry_after
+        before_keys = set(before.keys())
+        after_keys = set(after.keys())
+        added = after_keys - before_keys
+        removed = before_keys - after_keys
+        changed = [
+            k for k in after_keys if k in before_keys and after[k] != before[k]
+        ]
+        html = []
+        removed_tmpl = "<div style='color: #900; text-decoration: line-through'>-{}: {}</div>"
+        added_tmpl = "<div style='color: #090'>+{}: {}</div>"
+        changed_tmpl = "<div>{}: <span style='color: #900; text-decoration: line-through'>{}</span> <span style='color: #090'>{}</span></div>"
+        for key in sorted(removed):
+            html.append(removed_tmpl.format(escape(key), escape(before[key])))
+        for key in sorted(added):
+            html.append(added_tmpl.format(escape(key), escape(after[key])))
+        for key in sorted(changed):
+            html.append(changed_tmpl.format(
+                escape(key),
+                escape(before[key]),
+                escape(after[key])))
+        return mark_safe("<div style='display: inline-block'>{}</div>".format("\n".join(html)))
+
     class Meta:
         verbose_name = 'Member address check'
         verbose_name_plural = 'Member address checks'
