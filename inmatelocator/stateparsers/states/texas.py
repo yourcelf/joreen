@@ -64,6 +64,8 @@ class Search(BaseStateSearch):
                 "gender": "ALL",
                 "race": "ALL",
                 "btnSearch": "Search",
+                "tdcj": "",
+                "sid": "",
             }
             params[number_type] = number
             res = self.session.post(self.url, params)
