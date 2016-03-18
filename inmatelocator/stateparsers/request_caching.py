@@ -64,7 +64,7 @@ def get_caching_session(cache_name="cache/stateparsers", netloc_throttle=2):
         def __init__(self):
             super(SessionFactory, self).__init__(
                 cache_name=cache_name,
-                backend=backends.create_backend(None, cache_name, {}),
+                backend=backends.create_backend('redis', cache_name, {}),
                 expire_after=60*60*24,
                 allowable_codes=(200, 301, 302, 307),
                 allowable_methods=('GET', 'POST')

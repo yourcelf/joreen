@@ -12,3 +12,4 @@ pytz
 psycopg2
 celery
 django-celery
+redis
