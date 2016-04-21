@@ -183,7 +183,11 @@ def do_searches(update_run, facility_directory, searchable_profiles):
                     profile=profile,
                     member=profile.member)
         except Exception as e:
-            log_exception(update_run, e, kwargs['member'].bp_member_number)
+            try:
+                member_number = profile.member.bp_member_number
+            except Exception as e:
+                member_number = None
+            log_exception(update_run, e, member_number)
             continue
     print("Searches complete")
 
