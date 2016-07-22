@@ -60,7 +60,7 @@ class FacilityNameResult(models.Model):
     """
     administrator = models.ForeignKey(FacilityAdministrator)
     name = models.CharField(max_length=255)
-    facility_url = models.CharField(max_length=255, blank=True,
+    facility_url = models.TextField(blank=True,
             help_text="URL to the facility in question if provided by search site")
 
     created = models.DateTimeField(auto_now_add=True)
