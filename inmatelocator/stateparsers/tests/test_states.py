@@ -85,7 +85,7 @@ class TestPennsylvania(TestState):
     admin_name = "Pennsylvania"
     mod_name = "PA"
     def test_search(self):
-        self.check_search(first_name="john")
+        self.check_search(first_name="jake", last_name="ackley")
         self.check_search(number="KA3038")
 
 class TestTexas(TestState):
