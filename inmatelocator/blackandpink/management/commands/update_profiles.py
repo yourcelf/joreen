@@ -196,9 +196,12 @@ def do_zoho_updates(update_run, facility_directory):
     Execute zoho updates for all ContactCheck's associated with the given
     update_run.
     """
-    for cc in ContactCheck.objects.filter(update_run=update_run, entry_after=""):
+    checks = ContactCheck.objects.filter(update_run=update_run, entry_after="")
+    count = checks.count()
+    for i,cc in enumerate(checks):
         try:
             update_zoho(cc, facility_directory)
+            print("Zoho update {} / {} ({})".format(i+1, count, cc.member.bp_member_number))
         except Exception as e:
             log_exception(update_run, e, cc.member.bp_member_number)
             continue
