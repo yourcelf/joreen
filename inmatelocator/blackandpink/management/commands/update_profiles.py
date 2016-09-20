@@ -18,6 +18,7 @@ def log_exception(update_run, exception, member_number):
     print(exception)
     print(traceback.format_exc())
     update_run.errors.append({
+        "datetime": timezone.now().isoformat(),
         "exception": str(exception),
         "traceback": traceback.format_exc(),
         "member_number": member_number
