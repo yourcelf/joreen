@@ -3,7 +3,6 @@ import requests
 import json
 
 from stateparsers.states import BaseStateSearch
-from facilities.models import Facility
 
 class Search(BaseStateSearch):
     administrator_name = "Pennsylvania"
@@ -11,6 +10,7 @@ class Search(BaseStateSearch):
     url = "http://inmatelocatorapi.cor.pa.gov/api/inmLoc/firstCall"
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
 
         params = {
             "id": kwargs.get('number', ""),

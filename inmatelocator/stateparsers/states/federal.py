@@ -5,7 +5,6 @@ import time
 import requests
 
 from stateparsers.states import BaseStateSearch
-from facilities.models import Facility
 
 class Search(BaseStateSearch):
     url = "http://www.bop.gov/PublicInfo/execute/inmateloc"
@@ -13,6 +12,8 @@ class Search(BaseStateSearch):
     minimum_search_terms = [["last_name", "first_name"], ["number"]]
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
+
         searches = []
         if kwargs.get('number'):
             for numtype in ("IRN", "DCDC", "FBI", "INS"):

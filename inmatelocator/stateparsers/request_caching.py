@@ -3,7 +3,6 @@ import time
 import logging
 import requests_cache
 
-from stateparsers.models import NetlocThrottle
 from django.conf import settings
 
 import collections
@@ -27,9 +26,11 @@ class ThrottleSession(OriginalSession):
     max_retries = 2
 
     def send(self, request, **kwargs):
+        from stateparsers.models import NetlocThrottle
         # This method should only be called if a request is *not* cached.  If
         # that's the case, we want to throttle our upstream requests to play
         # nice.
+
 
         # Retry a connection if it fails, but with a good long pause in
         # between.

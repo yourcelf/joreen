@@ -1,12 +1,8 @@
 import re
 import lxml.html
 
-from localflavor.us.us_states import STATES_NORMALIZED
-
 from stateparsers.states import BaseStateSearch
 from stateparsers.request_caching import ThrottleSession
-from facilities.models import Facility
-
 _session = ThrottleSession()
 
 class Search(BaseStateSearch):
@@ -21,6 +17,7 @@ class Search(BaseStateSearch):
     session = _session
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
 
         # Get the auth cookie
         res = self.session.get(self.auth_url)

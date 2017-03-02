@@ -4,7 +4,6 @@ import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
-from facilities.models import Facility
 
 # Load facility data.
 
@@ -15,6 +14,8 @@ class Search(BaseStateSearch):
     post_url = "http://www.dc.state.fl.us/ActiveInmates/List.asp?DataAction=Filter"
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
+
         res = self.session.get(self.url)
         root = lxml.html.fromstring(res.text)
         sessionId = root.xpath("//input[@name='SessionID']/@value")[0]

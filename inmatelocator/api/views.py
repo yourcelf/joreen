@@ -4,9 +4,13 @@ from django.http import JsonResponse, HttpResponse
 
 from stateparsers import AVAILABLE_STATES, get_searcher, MinimumTermsError
 
-from localflavor.us.us_states import STATES_NORMALIZED, CONTIGUOUS_STATES
-
-contiguous_states = dict(CONTIGUOUS_STATES)
+_contiguous_states = None
+def get_state(abbr):
+    global _contiguous_states
+    from localflavor.us.us_states import CONTIGUOUS_STATES
+    if _contiguous_states is None:
+        _contiguous_states = dict(CONTIGUOUS_STATES)
+    return _contiguous_states.get(STATES_NORMALIZED.get(abbr.lower()))
 
 def access_control_headers(response):
     response['Access-Control-Allow-Origin'] = "*"
@@ -29,11 +33,12 @@ def access_control_response(fn):
 # Create your views here.
 @access_control_response
 def states(request):
+    from localflavor.us.us_states import STATES_NORMALIZED
     obj = {"states": {}}
     for abbr in AVAILABLE_STATES:
         state = {
             "abbreviation": abbr,
-            "name": contiguous_states.get(STATES_NORMALIZED.get(abbr.lower())) or abbr,
+            "name": get_state(abbr) or abbr,
             "minimum_search_terms": get_searcher(abbr).minimum_search_terms
         }
         obj['states'][abbr] = state

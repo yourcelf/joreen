@@ -31,18 +31,21 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'facilities',
+    'stateparsers',
+    'blackandpink',
+    'api',
+
+    'django_celery_beat',
+    'django_celery_results',
+    'localflavor',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'facilities',
-    'stateparsers',
-    'blackandpink',
-    'api',
-
 )
 
 MIDDLEWARE_CLASSES = (
@@ -112,12 +115,10 @@ SCRAPY_DIR = os.path.join(BASE_DIR, "..", "facilities")
 SCRAPY_BIN = os.path.join(SCRAPY_DIR, "venv", "bin", "scrapy")
 
 # Celery
-CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND='django-db'
+
 BROKER_URL = 'django://'
-INSTALLED_APPS += (
-  'djcelery',
-  'kombu.transport.django'
-)
 
 SITE_URL = "https://joreen.tirl.org"
 MOCK_ZOHO_UPDATES = True

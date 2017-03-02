@@ -2,7 +2,6 @@ import re
 import requests
 import lxml.html
 
-from facilities.models import Facility
 from stateparsers.states import BaseStateSearch
  
 texas_unit_type_re = re.compile(" (Unit|Complex|Transfer Facility|Prison|State Jail|Medical Facility|Geriatric Facility|Correctional (Center|Facility)|Treatment( Facility)?)$", re.I)
@@ -44,6 +43,7 @@ class Search(BaseStateSearch):
 
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
         # Fix number formatting
         number = kwargs.get('number', '')
         if number:

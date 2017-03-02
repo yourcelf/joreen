@@ -3,7 +3,6 @@ import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
-from facilities.models import Facility
 
 class Search(BaseStateSearch):
     administrator_name = "New York"
@@ -24,6 +23,8 @@ class Search(BaseStateSearch):
         return status, facilities
 
     def crawl(self, **kwargs):
+        from facilities.models import Facility
+
         res = self.session.get(self.url)
         root = lxml.html.fromstring(res.text)
         dfh_state_token = root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0]

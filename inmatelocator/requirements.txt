@@ -11,5 +11,6 @@ probablepeople
 pytz
 psycopg2
 celery
-django-celery
+django-celery-beat
+django-celery-results
 redis

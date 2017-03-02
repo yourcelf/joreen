@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 
-from stateparsers.models import FacilityNameResult, Facility
 from stateparsers.request_caching import get_caching_session
-from localflavor.us.us_states import STATES_NORMALIZED
 
 class LookupStatus(object):
     STATUS_INCARCERATED = "Incarcerated"
@@ -51,6 +49,9 @@ class BaseStateSearch(LookupStatus):
     session = _session
 
     def search(self, **kwargs):
+        # Import here rather than top-level
+        # https://github.com/django/django-localflavor/issues/203
+        from stateparsers.models import FacilityNameResult
         self.check_minimum_terms(kwargs)
         self.errors = []
         self.results = []
@@ -62,6 +63,9 @@ class BaseStateSearch(LookupStatus):
         return {'results': self.results, 'errors': self.errors}
 
     def add_result(self, **kwargs):
+        # Import here rather than top-level
+        # https://github.com/django/django-localflavor/issues/203
+        from stateparsers.models import Facility
         opts = {
             'administrator_name': self.administrator_name,
             'status': self.STATUS_UNKNOWN,
@@ -79,6 +83,9 @@ class BaseStateSearch(LookupStatus):
 
     @classmethod
     def get_state(cls, abbr):
+        # Import here rather than top-level
+        # https://github.com/django/django-localflavor/issues/203
+        from localflavor.us.us_states import STATES_NORMALIZED
         abbr = re.sub("[^a-z ]", "", abbr.lower())
         return STATES_NORMALIZED.get(abbr)
 
