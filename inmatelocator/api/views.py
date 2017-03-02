@@ -7,7 +7,7 @@ from stateparsers import AVAILABLE_STATES, get_searcher, MinimumTermsError
 _contiguous_states = None
 def get_state(abbr):
     global _contiguous_states
-    from localflavor.us.us_states import CONTIGUOUS_STATES
+    from localflavor.us.us_states import CONTIGUOUS_STATES, STATES_NORMALIZED
     if _contiguous_states is None:
         _contiguous_states = dict(CONTIGUOUS_STATES)
     return _contiguous_states.get(STATES_NORMALIZED.get(abbr.lower()))
@@ -33,7 +33,6 @@ def access_control_response(fn):
 # Create your views here.
 @access_control_response
 def states(request):
-    from localflavor.us.us_states import STATES_NORMALIZED
     obj = {"states": {}}
     for abbr in AVAILABLE_STATES:
         state = {
