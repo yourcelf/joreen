@@ -11,6 +11,7 @@ class Search(BaseStateSearch):
     post_url = "http://nysdoccslookup.doccs.ny.gov/GCA00P00/WIQ1/WINQ000"
 
     def get_facilities_and_status(self, facility_name, raw_status):
+        from facilities.models import Facility
         if raw_status == "IN CUSTODY":
             status = self.STATUS_INCARCERATED
             facilities = Facility.objects.find_by_name("New York", facility_name)

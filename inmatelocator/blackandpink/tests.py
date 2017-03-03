@@ -23,6 +23,7 @@ class TestAddressParsing(TestCase):
     def test_po_box_recipient_split(self):
         a = Address.from_zoho({'Address_1_Facility': 'F.C.I. #1',
          'Address_2': 'P.O. Box 3725',
+         'Address_4': '',
          'City': 'Adelanto',
          'DOC_Unit_Name': '',
          'Facility_Add2_City_State_Zip': 'F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301',
@@ -81,6 +82,7 @@ class TestAddressMatching(TestCase):
         byrd_unit_zoho = {
             'Address_1_Facility': 'Byrd Unit',
             'Address_2': '21 FM 247',
+            'Address_4': '',
             'City': 'Huntsville',
             'DOC_Unit_Name': 'Byrd',
             'Facility_Add2_City_State_Zip': 'Byrd Unit; 21 FM 247; Huntsville, TX \xa0'
@@ -133,6 +135,7 @@ class TestAddressMatching(TestCase):
         apalachee_east_zoho = {
             'Address_1_Facility': 'Apalachee Corr.- East',
             'Address_2': '35 Apalachee Drive',
+            'Address_4': '',
             'City': 'Sneads',
             'DOC_Unit_Name': '',
             'Facility_Add2_City_State_Zip': 'Apalachee Corr.- East; 35 Apalachee Drive; '
@@ -169,6 +172,7 @@ class TestAddressMatching(TestCase):
     def test_avenal(self):
         avenal_zoho = {'Address_1_Facility': 'Avenal SP (ASP)',
             'Address_2': 'PO Box 9',
+            'Address_4': '',
             'City': 'Avenal',
             'DOC_Unit_Name': '',
             'Facility_Add2_City_State_Zip': 'Avenal SP (ASP); PO Box 9; Avenal, CA \xa0'
@@ -195,6 +199,7 @@ class TestAddressMatching(TestCase):
     def test_fci_num_1(self):
         fci_num_1 = {'Address_1_Facility': 'F.C.I. #1',
              'Address_2': 'P.O. Box 3725',
+             'Address_4': '',
              'City': 'Adelanto',
              'DOC_Unit_Name': '',
              'Facility_Add2_City_State_Zip': 'F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301',
@@ -223,8 +228,10 @@ class TestAddressMatching(TestCase):
 
 
     def test_san_quentin(self):
-        san_quentin_zoho = {'Address_1_Facility': 'San Quentin S. P.',
+        san_quentin_zoho = {
+             'Address_1_Facility': 'San Quentin S. P.',
              'Address_2': '',
+             'Address_4': '',
              'City': 'San Quentin',
              'DOC_Unit_Name': '',
              'Facility_Add2_City_State_Zip': 'San Quentin S. P.; ; San Quentin, CA 94974',
