@@ -37,7 +37,7 @@ def states(request):
     for abbr in AVAILABLE_STATES:
         state = {
             "abbreviation": abbr,
-            "name": get_state(abbr) or abbr,
+            "name": str(get_state(abbr) or abbr),
             "minimum_search_terms": get_searcher(abbr).minimum_search_terms
         }
         obj['states'][abbr] = state
