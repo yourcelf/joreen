@@ -23,7 +23,7 @@ class TestState(TestCase):
                 for part in kwargs[name_part].split():
                     self.assertTrue(part.lower() in res.name.lower(),
                         "Name mismatch: expected {}, actual {}".format(kwargs[name_part], res.name))
-        if 'number' in kwargs:
+        if kwargs.get('number'):
             self.assertTrue(kwargs['number'] in res.numbers.values(),
                 "Number mismatch: {} not found in {}".format(kwargs['number'], res.numbers))
         self.assert_enough_facilities(res)
@@ -77,9 +77,9 @@ class TestNewYork(TestState):
     admin_name = "New York"
     mod_name = "NY"
     def test_search(self):
-        self.check_search(number="13A1038")
-        self.check_search(last_name="mitch")
-        self.check_search(first_name="john", last_name="smith")
+        self.check_search(number="13A1038", first_name="", last_name="")
+        self.check_search(last_name="mitch", first_name="", number="")
+        self.check_search(first_name="john", last_name="smith", number="")
 
 class TestPennsylvania(TestState):
     admin_name = "Pennsylvania"

@@ -3,12 +3,18 @@ import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
+from stateparsers.request_caching import ThrottleSession
+
+_session = ThrottleSession()
 
 class Search(BaseStateSearch):
     administrator_name = "New York"
     minimum_search_terms = [["last_name"], ["number"]]
     url = "http://nysdoccslookup.doccs.ny.gov"
     post_url = "http://nysdoccslookup.doccs.ny.gov/GCA00P00/WIQ1/WINQ000"
+
+    # Session without caching so we get the unique DFH_STATE_TOKEN each time.
+    session_nocache = _session
 
     def get_facilities_and_status(self, facility_name, raw_status):
         from facilities.models import Facility
@@ -26,13 +32,13 @@ class Search(BaseStateSearch):
     def crawl(self, **kwargs):
         from facilities.models import Facility
 
-        res = self.session.get(self.url)
+        res = self.session_nocache.get(self.url)
         root = lxml.html.fromstring(res.text)
         dfh_state_token = root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0]
 
         params = {
             "M00_LAST_NAMEI": kwargs.get("last_name", ""),
-            "M00_FIRST_NAMEI": kwargs.get('first_name', ''),
+            "M00_FIRST_NAMEI": kwargs.get("first_name", ""),
         }
 
         post_data = {
@@ -66,6 +72,7 @@ class Search(BaseStateSearch):
                     params["M00_NYSID_FLD2I"] = match.group(2)
                 else:
                     errors.append("Unrecognized number format")
+                    return
 
             # Numbers must be exact, and take us directly to a single result page.
             post_data.update(params)
