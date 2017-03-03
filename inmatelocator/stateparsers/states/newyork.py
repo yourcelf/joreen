@@ -116,7 +116,8 @@ class Search(BaseStateSearch):
                 errors.append("Couldn't parse information by that number.")
         else:
             # Names take us to a search results page.
-            res = self.session.post(self.post_url, params)
+            post_data.update(params)
+            res = self.session.post(self.post_url, post_data)
             root = lxml.html.fromstring(res.text)
             for row in root.xpath("//table[@id='dinlist']//tr"):
                 tds = row.xpath('.//td')

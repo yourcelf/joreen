@@ -12,7 +12,7 @@ class TestState(TestCase):
         # do support caching should just return instantly.
         for i in range(2):
             results = search(self.mod_name, **terms)
-            self.assertTrue(len('results') > 0)
+            self.assertTrue(len(results['results']) > 0, "0 results for {}".format(repr(terms)))
             self.assertEquals(results['errors'], [])
             for res in results['results']:
                 self.check_result(res, **terms)
@@ -86,7 +86,7 @@ class TestPennsylvania(TestState):
     mod_name = "PA"
     def test_search(self):
         self.check_search(first_name="jake", last_name="ackley")
-        self.check_search(number="KA3038")
+        self.check_search(number="CN1835")
 
 class TestTexas(TestState):
     admin_name = "Texas"
