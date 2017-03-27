@@ -32,7 +32,8 @@ facility_name_overrides = {
 class Search(BaseStateSearch):
     administrator_name = "Texas"
     minimum_search_terms = [["last_name", "first_name"], ["number"]]
-    url = "http://offender.tdcj.state.tx.us/OffenderSearch/search.action"
+    base_url = "https://offender.tdcj.texas.gov"
+    url = "%s/OffenderSearch/search.action" % base_url
 
     @classmethod
     def normalize_name(cls, name):
@@ -77,7 +78,7 @@ class Search(BaseStateSearch):
                 if not name:
                     continue
 
-                result_url = "http://offender.tdcj.state.tx.us" + "".join(row.xpath('./td[1]/a/@href')) 
+                result_url = self.base_url + "".join(row.xpath('./td[1]/a/@href')) 
                 numbers = {"tdcj_number": "".join(row.xpath('./td[2]/text()'))}
                 match = re.search("sid=([-0-9a-zA-Z]+)", result_url)
                 if match:
