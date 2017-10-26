@@ -31280,5 +31280,21 @@
   },
   "pk": 2065,
   "model": "facilities.alternatename"
+},
+{
+  "fields": {
+    "name": "California Men's Colony",
+    "facility": 37
+  },
+  "pk": 2066,
+  "model": "facilities.alternatename"
+},
+{
+  "fields": {
+    "name": "RJ Donovan Correctional Facility",
+    "facility": 8 
+  },
+  "pk": 2067,
+  "model": "facilities.alternatename"
 }
 ]

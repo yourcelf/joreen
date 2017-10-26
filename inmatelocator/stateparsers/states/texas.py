@@ -72,7 +72,7 @@ class Search(BaseStateSearch):
             res = self.session.post(self.url, params)
 
             root = lxml.html.fromstring(res.text)
-            rows = root.xpath('//table[@class="ws"]//tr')
+            rows = root.xpath('//table[@class="tdcj_table"]//tr')
             for row in rows:
                 name = "".join(row.xpath('./td[1]/a/text()'))
                 if not name:

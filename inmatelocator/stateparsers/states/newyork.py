@@ -77,8 +77,9 @@ class Search(BaseStateSearch):
             # Numbers must be exact, and take us directly to a single result page.
             post_data.update(params)
             res = self.session.post(self.post_url, post_data)
-            root = lxml.html.fromstring(res.text)
+
             if "The inmate you have chosen has multiple commitments to NYS DOCCS" in res.text:
+                root = lxml.html.fromstring(res.text)
                 post_data = {
                     "M12_SEL_DINI": root.xpath("//input[@name='M12_SEL_DINI']/@value")[0],
                     "K01": root.xpath("//input[@name='K01']/@value")[0],
@@ -92,16 +93,23 @@ class Search(BaseStateSearch):
                     "din1": root.xpath("//input[@name='din1']/@value")[0],
                 }
                 url = self.url + "/GCA00P00/WIQ2/WINQ120"
-                res = self.session.post(url, post_data)
-            if "Identifying and Location Information" in res.text:
 
+                # POST again to retrieve detail information from one commitment.
+                res = self.session.post(url, post_data)
+
+            if "Identifying and Location Information" in res.text:
+                root = lxml.html.fromstring(res.text)
                 facility_name = "".join(root.xpath("//td[@headers='t1g']/text()")).strip()
                 raw_status = "".join(root.xpath("//td[@headers='t1f']//text()")).strip()
                 status, facilities = self.get_facilities_and_status(facility_name, raw_status)
+                name = "".join(root.xpath("//td[@headers='t1b']/text()")).strip()
+                numbers = {
+                    "din": "".join(root.xpath("//td[@headers='t1a']/text()")).strip()
+                }
 
                 self.add_result(
-                    name="".join(root.xpath("//td[@headers='t1b']/text()")).strip(),
-                    numbers={"din": "".join(root.xpath("//td[@headers='t1a']/text()")).strip()},
+                    name=name,
+                    numbers=numbers,
                     search_terms=params,
                     status=status,
                     raw_facility_name=facility_name,

@@ -9,3 +9,4 @@ inmatelocator/static
 settings.py
 frontend/bower_components
 frontend/node_modules
+.cache

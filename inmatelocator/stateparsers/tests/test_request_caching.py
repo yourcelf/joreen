@@ -1,29 +1,34 @@
 import time
-from django.test import TestCase
+import pytest
 
 from stateparsers.request_caching import get_caching_session
 
-class TestRequestCaching(TestCase):
-    throttle = 5
+@pytest.fixture
+def throttle():
+    return 5
 
-    def setUp(self):
-        # remove the default cache
-        self.session = get_caching_session("cache/test_cache", self.throttle)
-        self.session.cache.clear()
+@pytest.fixture
+def caching_session(throttle):
+    session = get_caching_session("cache/test_cache", throttle)
+    session.cache.clear()
+    return session
 
-    def test_uses_cache(self):
-        start = time.time()
-        # not cached, not throttled
-        res = self.session.get("http://asdf.com/")
-        self.assertFalse(getattr(res, "from_cache", None))
-        # cached
-        pre_cache = time.time()
-        res = self.session.get("http://asdf.com/")
-        self.assertTrue(getattr(res, "from_cache", None))
-        self.assertTrue(time.time() - pre_cache < 0.1)
-        # not cached, throttled
-        res = self.session.get("http://asdf.com/aboutasdf.html")
-        later = time.time()
-        # time.time seems to have some accuracy issues that break this
-        # sometimes? So add 1 to fix rounding errors.
-        self.assertTrue(later - start + 1 >= self.throttle)
+@pytest.mark.django_db
+def test_uses_cache(caching_session, throttle):
+    start = time.time()
+
+    # not cached, not throttled
+    res = caching_session.get("http://asdf.com/")
+    assert res.from_cache == False
+
+    # cached
+    pre_cache = time.time()
+    res = caching_session.get("http://asdf.com/")
+    assert res.from_cache == True
+    assert time.time() - pre_cache < 0.1
+    # not cached, throttled
+    res = caching_session.get("http://asdf.com/aboutasdf.html")
+    later = time.time()
+    # time.time seems to have some accuracy issues that break this
+    # sometimes? So add 1 to fix rounding errors.
+    assert later - start + 1 >= throttle
