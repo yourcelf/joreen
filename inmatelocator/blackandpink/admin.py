@@ -30,6 +30,7 @@ class UpdateRunAdmin(BaseAdmin):
         'num_errors',
         'show_errors',
     ]
+    list_per_page = 5
     exclude = ['errors']
 
     def changelist_view(self, request, extra_context=None):
