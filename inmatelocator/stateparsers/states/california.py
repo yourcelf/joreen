@@ -8,8 +8,8 @@ _session = ThrottleSession()
 class Search(BaseStateSearch):
     administrator_name = "California"
     minimum_search_terms = [["last_name"], ["number"]]
-    url = "http://inmatelocator.cdcr.ca.gov/search.aspx"
-    auth_url = "http://inmatelocator.cdcr.ca.gov/default.aspx"
+    url = "https://inmatelocator.cdcr.ca.gov/search.aspx"
+    auth_url = "https://inmatelocator.cdcr.ca.gov/default.aspx"
 
     # California doesn't cache well with its terms interstitial.  Attempts
     # to work around have thus been unsuccessful, so just disable cache for
@@ -31,7 +31,7 @@ class Search(BaseStateSearch):
             'text': ''.join(root.xpath('//textarea[@name="text"]/text()')),
             "ctl00$LocatorPublicPageContent$btnAccept": "Agree",
         }
-        self.session.post("http://inmatelocator.cdcr.ca.gov/default.aspx", data)
+        self.session.post(self.auth_url, data)
 
         # Now do the search
         res = self.session.get(self.url)
