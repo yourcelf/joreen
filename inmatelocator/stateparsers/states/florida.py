@@ -71,7 +71,7 @@ class Search(BaseStateSearch):
                 if status == self.STATUS_INCARCERATED:
                     raw_facility = ''.join(tds[6].xpath('.//text()')).strip()
                     facilities = Facility.objects.find_by_name(
-                        'FL', raw_facility
+                        'Florida', raw_facility
                     )
                 else:
                     raw_facility = ''
