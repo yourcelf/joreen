@@ -12,6 +12,7 @@ from stateparsers.states import BaseStateSearch
 class Search(BaseStateSearch):
     administrator_name = "Florida"
     minimum_search_terms = [["first_name"], ["last_name"], ["number"]]
+    search_url = "http://www.dc.state.fl.us/OffenderSearch/Search.aspx"
     url = "http://www.dc.state.fl.us/OffenderSearch/list.aspx"
     detail_url = 'http://www.dc.state.fl.us/offenderSearch/detail.aspx'
 
@@ -62,57 +63,36 @@ class Search(BaseStateSearch):
             rows = root.xpath('//table[@id="ctl00_ContentPlaceHolder1_grdList"]//tr')
             for row in rows:
                 tds = row.xpath('./td')
-                if len(tds) != 8:
+                if len(tds) < 5:
                     continue
                 dc_number = ''.join(tds[2].xpath('.//text()')).strip()
                 name = ''.join(tds[1].xpath('.//text()')).strip()
-                results_by_type_search[type_search].append({
-                    'number': dc_number,
-                    'name': name
-                })
 
-        for type_search, results in results_by_type_search.items():
-            for result in results:
-                status = result_types[type_search]
+                if status == self.STATUS_INCARCERATED:
+                    raw_facility = ''.join(tds[6].xpath('.//text()')).strip()
+                    facilities = Facility.objects.find_by_name(
+                        'FL', raw_facility
+                    )
+                else:
+                    raw_facility = ''
+                    facilities = Facility.objects.none()
 
                 detail_url = '{}?{}'.format(
                     self.detail_url,
                     urlencode({
                         'Page': 'Detail',
-                        'DCNumber': result['number'],
+                        'DCNumber': dc_number,
                         'TypeSearch': type_search
                     })
                 )
 
-                if status == self.STATUS_RELEASED:
-                    facilities = Facility.objects.none()
-                    raw_facility = ''
-                else:
-                    res = self.session.get(detail_url)
-                    root = lxml.html.fromstring(res.text)
-                    detail_rows = root.xpath(
-                        '//table[@class="offenderDetails"]//tr'
-                    )
-                    raw_facility = ''
-                    for row in detail_rows:
-                        tds = row.xpath('./td')
-                        field = ''.join(tds[0].xpath('.//text()')).strip()
-                        if 'Current Facility' in field:
-                            raw_facility = ''.join(tds[1].xpath('./text()')).strip()
-                    if raw_facility:
-                        facilities = Facility.objects.find_by_name(
-                            "Florida", raw_facility
-                        )
-                    else:
-                        facilities = Facility.objects.none()
-
                 self.add_result(
                     search_terms=params,
-                    name=result['name'],
-                    numbers={"dc_number": result['number']},
+                    name=name,
+                    numbers={'dc_number': dc_number},
                     status=status,
-                    search_url=self.url,
+                    search_url=self.search_url,
                     result_url=detail_url,
                     facilities=facilities,
-                    raw_facility=raw_facility,
+                    raw_facility=raw_facility
                 )
