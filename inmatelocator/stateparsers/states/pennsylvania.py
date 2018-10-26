@@ -7,7 +7,7 @@ from stateparsers.states import BaseStateSearch
 class Search(BaseStateSearch):
     administrator_name = "Pennsylvania"
     minimum_search_terms = [["last_name"], ["first_name"], ["number"]]
-    url = "http://inmatelocatorapi.cor.pa.gov/api/inmLoc/firstCall"
+    url = "https://captorapi.cor.pa.gov/InmLocAPI/api/v1/InmateLocator/SearchResults"
 
     def crawl(self, **kwargs):
         from facilities.models import Facility
@@ -34,7 +34,7 @@ class Search(BaseStateSearch):
             self.errors.append(res.content)
             return
 
-        results = json.loads(json.loads(res.text))
+        results = json.loads(res.text)
 
         for result in results.get("inmates", []):
             name_part_keys = ["inm_firstname", "inm_middlename", "inm_lastname", "inm_suffix"]
