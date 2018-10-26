@@ -12,8 +12,28 @@ alternate_names = {
     "Transitional Living Center": ["TRANSITIONAL LIVING CTR"],
 }
 
+# Update 2018-10-23: PA uses a central mail processing facility in Florida,
+# scans mail, and sends emails to the recipients.  Info:
+#
+# https://www.cor.pa.gov/family-and-friends/Pages/Mailing-Addresses.aspx
+#
+# Basic template:
+#
+# Smart Communications/PADOC
+# Inmate Name/Inmate Number
+# Institution
+# PO Box 33028
+# St Petersburg, FL 33733
+#
+# FIXME: The scraper now needs a rewrite.  The SCI addresses were updated live
+# in the db to reflect the new Florida aggregate address.  All the URLs in here
+# are busted.
+
+
 class PennsylvaniaSpider(scrapy.Spider):
     name = "pennsylvania"
+
+    county_facilities = "https://www.cor.pa.gov/Facilities/CountyPrisons/Documents/Pennsylvania%20County%20Correctional%20Facility%20Address%20and%20Contact%20Listing.xlsx"
 
     doc_urls = [
         "http://www.cor.pa.gov/Administration/ContactUsHotlinesandRight-To-Know/Pages/Mailing-Addresses.aspx#.VeWt2qTD99A"
@@ -25,6 +45,11 @@ class PennsylvaniaSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
+        raise Exception(
+            "Scraper needs to be rewritten; all URLs are busted, and PA's "
+            "addressing scheme (at least for SCI's if not others) has changed."
+        )
+
         return [
             scrapy.Request(url, callback=self.parse_doc) for url in self.doc_urls
         ] + [
