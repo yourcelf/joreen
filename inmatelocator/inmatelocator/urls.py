@@ -22,6 +22,7 @@ admin.site.site_title = "Joreen Facility Updater"
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^account/', include('django.contrib.auth.urls')),
     url(r'^api/', include('api.urls')),
     url(r'^blackandpink/', include('blackandpink.urls')),
 ]
