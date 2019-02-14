@@ -161,9 +161,15 @@ class Profile(object):
             return []
 
         searchers = []
+        if "PADOC" in self.address.address1 or "PADOC" in self.address.address2:
+            state_to_search = "PA"
+        else:
+            state_to_search = self.address.state
         try:
-            state_search = stateparsers.get_searcher(self.address.state)()
-            searchers.append((self.address.state, state_search))
+            searchers.append((
+                state_to_search,
+                stateparsers.get_searcher(state_to_search)(),
+            ))
         except NotImplementedError:
             pass
         searchers.append(('federal', stateparsers.get_searcher("federal")()))
