@@ -19,17 +19,23 @@ class Search(BaseStateSearch):
         }
 
         post_data = {
-            "middleName": "",
-            "countylistkey": "---",
+            "age": "",
             "citizenlistkey": "---",
+            "countylistkey": "---",
+            "dateofbirth": None,
+            "locationlistkey": "---",
+            "middleName": "",
+            "paroleNumber": "",
             "racelistkey": "---",
             "sexlistkey": "---",
-            "locationlistkey": "---",
             "sortBy": "1"
         }
         post_data.update(params)
 
         res = self.session.post(self.url, json=post_data)
+        print("HAY!", [(k, type(v)) for k, v in post_data.items()])
+        print(res.content)
+        print(res.status_code)
         if res.status_code != 200:
             self.errors.append(res.content)
             return
