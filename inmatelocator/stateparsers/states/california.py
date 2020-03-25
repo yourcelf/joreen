@@ -1,9 +1,12 @@
+import os
 import re
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
 from stateparsers.request_caching import ThrottleSession
 _session = ThrottleSession()
+
+CERT_BUNDLE = os.path.join(os.path.dirname(__file__), "california.pem")
 
 class Search(BaseStateSearch):
     administrator_name = "California"
@@ -20,7 +23,7 @@ class Search(BaseStateSearch):
         from facilities.models import Facility
 
         # Get the auth cookie
-        res = self.session.get(self.auth_url)
+        res = self.session.get(self.auth_url, verify=CERT_BUNDLE)
         root = lxml.html.fromstring(res.text)
         data = {
             '__EVENTTARGET': "",
