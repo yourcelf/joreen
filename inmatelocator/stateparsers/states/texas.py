@@ -1,3 +1,4 @@
+import traceback
 import re
 import requests
 import lxml.html
@@ -54,9 +55,6 @@ class Search(BaseStateSearch):
         else:
             number_types = ("sid",)
 
-        results = []
-        errors = []
-
         for number_type in number_types:
             params = {
                 "page": "index",
@@ -69,7 +67,11 @@ class Search(BaseStateSearch):
                 "sid": "",
             }
             params[number_type] = number
-            res = self.session.post(self.url, params)
+            try:
+                res = self.session.post(self.url, params)
+            except Exception as e:
+                self.errors.append(traceback.format_exc())
+                continue
 
             root = lxml.html.fromstring(res.text)
             rows = root.xpath('//table[@class="tdcj_table"]//tr')

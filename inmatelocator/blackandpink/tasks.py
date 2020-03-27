@@ -9,7 +9,8 @@ def do_update_run():
         UpdateRun.objects.get_unfinished()
         return
     except UpdateRun.DoesNotExist:
-        call_command("update_profiles")
+        pass
+    call_command("update_profiles")
 
 @shared_task(name='inmatelocator.blackandpink.tasks.do_facility_run')
 def do_facility_run():
@@ -17,4 +18,5 @@ def do_facility_run():
         FacilityRun.objects.get_unfinished()
         return
     except FacilityRun.DoesNotExist:
-        call_command("match_zoho_facilities")
+        pass
+    call_command("match_zoho_facilities")

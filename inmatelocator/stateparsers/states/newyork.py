@@ -55,9 +55,6 @@ class Search(BaseStateSearch):
             "M00_NYSID_FLD2I": "",
         }
 
-        errors = []
-        results = []
-
         if kwargs.get('number'):
             number = kwargs['number']
             match = re.match("(\d\d)-?(\w)-?(\d\d\d\d)", number)
@@ -71,7 +68,7 @@ class Search(BaseStateSearch):
                     params["M00_NYSID_FLD1I"] = match.group(1)
                     params["M00_NYSID_FLD2I"] = match.group(2)
                 else:
-                    errors.append("Unrecognized number format")
+                    self.errors.append("Unrecognized number format")
                     return
 
             # Numbers must be exact, and take us directly to a single result page.
@@ -128,7 +125,7 @@ class Search(BaseStateSearch):
                     )
                 )
             else:
-                errors.append("Couldn't parse information by that number.")
+                self.errors.append("Couldn't parse information by that number.")
         else:
             # Names take us to a search results page.
             post_data.update(params)
