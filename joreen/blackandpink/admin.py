@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from blackandpink.models import UpdateRun, MemberProfile, ContactCheck, UnknownFacility, UnknownFacilityMatch, FacilityRun
-from inmatelocator.admin_base import BaseAdmin
+from joreen.admin_base import BaseAdmin
 
 class UpdateRunAdmin(BaseAdmin):
     list_display = [

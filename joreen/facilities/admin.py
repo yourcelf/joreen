@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from facilities.models import *
-from inmatelocator.admin_base import BaseAdmin
+from joreen.admin_base import BaseAdmin
 
 class AlternateNameInline(admin.StackedInline):
     model = AlternateName

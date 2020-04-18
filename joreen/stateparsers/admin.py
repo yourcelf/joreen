@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from stateparsers.models import FacilityNameResult, NetlocThrottle
-from inmatelocator.admin_base import BaseAdmin
+from joreen.admin_base import BaseAdmin
 
 class FacilityNameResultAdmin(BaseAdmin):
     list_display = ['name', 'facility_url', 'administrator']
