@@ -3,9 +3,9 @@ __pycache__
 .scrapy
 venv
 db.sqlite3*
-inmatelocator/cache/*
-inmatelocator/static
-!inmatelocator/cache/.keep
+joreen/cache/*
+joreen/static
+!joreen/cache/.keep
 settings.py
 frontend/bower_components
 frontend/node_modules
