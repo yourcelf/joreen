@@ -1,0 +1,38 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+[dev-packages]
+ansible = "*"
+ansible-vault = "*"
+black = "==19.10b0"
+flake8 = "*"
+ipdb = "*"
+ipython = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-django = "*"
+pytest-flake8 = "*"
+pytest-watch = "*"
+pytest-xdist = "*"
+watchdog = "*"
+Werkzeug = "*"
+
+[packages]
+celery = {extras = ["redis"], version = "~=4.4.2"}
+django-celery-beat = "~=2.0.0"
+django-celery-results = "~=1.2.1"
+django-localflavor = "~=3.0.1"
+django = "~=2.2"
+fuzzywuzzy = "~=0.18.0"
+lxml = "~=4.5.0"
+probablepeople = "~=0.5.4"
+psycopg2 = "~=2.8.5"
+python-Levenshtein = "~=0.12.0"
+pytz = "~=2019.3"
+requests = "~=2.23.0"
+requests-cache = "~=0.5.2"
+usaddress = "~=0.5.10"
+
+[requires]
+python_version = "3.6"
