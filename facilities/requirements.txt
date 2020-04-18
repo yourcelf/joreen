@@ -1,6 +1,0 @@
-scrapy
-addresscleaner
-fuzzywuzzy
-probablepeople==0.3.1
-usaddress
-python-levenshtein
