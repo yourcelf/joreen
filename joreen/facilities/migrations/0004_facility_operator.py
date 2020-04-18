@@ -14,6 +14,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="facility",
             name="operator",
-            field=models.ForeignKey(null=True, to="facilities.FacilityOperator"),
+            field=models.ForeignKey(
+                null=True, to="facilities.FacilityOperator", on_delete=models.CASCADE
+            ),
         ),
     ]

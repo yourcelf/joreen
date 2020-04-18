@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import jsonfield.fields
 
 
 class Migration(migrations.Migration):
@@ -15,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="updaterun",
             name="errors",
-            field=jsonfield.fields.JSONField(default=[]),
+            field=models.TextField(default="[]"),
             preserve_default=False,
         ),
     ]

@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import jsonfield.fields
 
 
 class Migration(migrations.Migration):
@@ -23,9 +22,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("raw_facility_name", models.CharField(max_length=255, blank=True)),
-                ("entry_before", jsonfield.fields.JSONField()),
-                ("entry_after", jsonfield.fields.JSONField()),
-                ("search_result", jsonfield.fields.JSONField()),
+                ("entry_before", models.TextField()),
+                ("entry_after", models.TextField()),
+                ("search_result", models.TextField()),
                 ("entry_changed", models.BooleanField(default=False)),
                 (
                     "status",
@@ -41,7 +40,7 @@ class Migration(migrations.Migration):
                 ),
                 ("created", models.DateTimeField(auto_now_add=True)),
             ],
-            options={"get_latest_by": "created", "ordering": ["-created"],},
+            options={"get_latest_by": "created", "ordering": ["-created"]},
         ),
         migrations.CreateModel(
             name="MemberProfile",
@@ -78,11 +77,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="contactcheck",
             name="member",
-            field=models.ForeignKey(to="blackandpink.MemberProfile"),
+            field=models.ForeignKey(
+                to="blackandpink.MemberProfile", on_delete=models.CASCADE
+            ),
         ),
         migrations.AddField(
             model_name="contactcheck",
             name="update_run",
-            field=models.ForeignKey(to="blackandpink.UpdateRun"),
+            field=models.ForeignKey(
+                to="blackandpink.UpdateRun", on_delete=models.CASCADE
+            ),
         ),
     ]

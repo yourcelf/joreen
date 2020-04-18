@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import localflavor.us.models
+import phonenumber_field.modelfields
 
 
 class Migration(migrations.Migration):
@@ -193,7 +194,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "phone",
-                    localflavor.us.models.PhoneNumberField(blank=True, max_length=20),
+                    phonenumber_field.modelfields.PhoneNumberField(
+                        blank=True, max_length=20
+                    ),
                 ),
                 ("provenance", models.CharField(max_length=255)),
                 ("provenance_url", models.CharField(max_length=255)),
@@ -239,16 +242,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="facility",
             name="administrator",
-            field=models.ForeignKey(to="facilities.FacilityAdministrator", null=True),
+            field=models.ForeignKey(
+                to="facilities.FacilityAdministrator",
+                null=True,
+                on_delete=models.CASCADE,
+            ),
         ),
         migrations.AddField(
             model_name="facility",
             name="type",
-            field=models.ForeignKey(to="facilities.FacilityType", null=True),
+            field=models.ForeignKey(
+                to="facilities.FacilityType", null=True, on_delete=models.CASCADE
+            ),
         ),
         migrations.AddField(
             model_name="alternatename",
             name="facility",
-            field=models.ForeignKey(to="facilities.Facility"),
+            field=models.ForeignKey(to="facilities.Facility", on_delete=models.CASCADE),
         ),
     ]

@@ -15,7 +15,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="contactcheck",
             name="facility",
-            field=models.ForeignKey(null=True, to="facilities.Facility", blank=True),
+            field=models.ForeignKey(
+                null=True,
+                to="facilities.Facility",
+                blank=True,
+                on_delete=models.CASCADE,
+            ),
         ),
         migrations.AlterField(
             model_name="contactcheck",

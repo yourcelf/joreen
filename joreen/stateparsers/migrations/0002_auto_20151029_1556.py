@@ -19,6 +19,7 @@ class Migration(migrations.Migration):
                 null=True,
                 blank=True,
                 to="facilities.Facility",
+                on_delete=models.CASCADE,
             ),
         ),
     ]

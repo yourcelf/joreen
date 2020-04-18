@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import Q
-from django.utils import timezone
-from localflavor.us.models import USPostalCodeField, USZipCodeField, PhoneNumberField
+from localflavor.us.models import USPostalCodeField, USZipCodeField
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class FacilityType(models.Model):
@@ -14,7 +14,8 @@ class FacilityType(models.Model):
 class FacilityAdministrator(models.Model):
     name = models.CharField(
         max_length=255,
-        help_text="The incarcerating state or entity, e.g. Federal Bureau of Prisons; California",
+        help_text="The incarcerating state or entity,"
+        " e.g. Federal Bureau of Prisons; California",
     )
 
     def __str__(self):
@@ -24,7 +25,8 @@ class FacilityAdministrator(models.Model):
 class FacilityOperator(models.Model):
     name = models.CharField(
         max_length=255,
-        help_text="The company or department that operates, e.g. Corrections Corporation of America; California Department of Corrections",
+        help_text="The company or department that operates, e.g."
+        " Corrections Corporation of America; California Department of Corrections",
     )
 
     def __str__(self):
@@ -50,7 +52,9 @@ class FacilityManager(models.Manager):
 class Facility(models.Model):
     code = models.CharField(
         max_length=255,
-        help_text="Facility code provided by facility administrator.  The more unique the better, though some DOC's have many addresses under the same code.",
+        help_text="Facility code provided by facility administrator."
+        " The more unique the better, though some DOC's have many addresses under the"
+        " same code.",
         blank=True,
     )
     name = models.CharField(max_length=255, help_text="Canonical name for the facility")
@@ -62,12 +66,15 @@ class Facility(models.Model):
     phone = PhoneNumberField(blank=True, max_length=255)
     general = models.BooleanField(
         default=False,
-        help_text="Is this address a 'general mail' address for facilities with this code?",
+        help_text="Is this address a 'general mail' address for facilities with"
+        " this code?",
     )
 
-    type = models.ForeignKey(FacilityType, null=True)
-    administrator = models.ForeignKey(FacilityAdministrator, null=True)
-    operator = models.ForeignKey(FacilityOperator, null=True)
+    type = models.ForeignKey(FacilityType, null=True, on_delete=models.CASCADE)
+    administrator = models.ForeignKey(
+        FacilityAdministrator, null=True, on_delete=models.CASCADE
+    )
+    operator = models.ForeignKey(FacilityOperator, null=True, on_delete=models.CASCADE)
 
     provenance = models.CharField(max_length=255, verbose_name="data source")
     provenance_url = models.CharField(max_length=255, verbose_name="data source URL")
@@ -101,7 +108,10 @@ class Facility(models.Model):
 
     def flat_address(self):
         parts = []
-        haz = lambda key: hasattr(self, key) and getattr(self, key)
+
+        def haz(key):
+            return hasattr(self, key) and getattr(self, key)
+
         if haz("name"):
             parts.append(self.name)
         if haz("address1"):
@@ -129,7 +139,7 @@ class Facility(models.Model):
 
 
 class AlternateName(models.Model):
-    facility = models.ForeignKey(Facility)
+    facility = models.ForeignKey(Facility, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
 
     def __str__(self):

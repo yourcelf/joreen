@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import jsonfield.fields
 
 
 class Migration(migrations.Migration):
@@ -45,11 +44,18 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("score", models.IntegerField()),
-                ("breakdown", jsonfield.fields.JSONField()),
-                ("match", models.ForeignKey(to="facilities.Facility")),
+                ("breakdown", models.TextField()),
+                (
+                    "match",
+                    models.ForeignKey(
+                        to="facilities.Facility", on_delete=models.CASCADE
+                    ),
+                ),
                 (
                     "unknown_facility",
-                    models.ForeignKey(to="blackandpink.UnknownFacility"),
+                    models.ForeignKey(
+                        to="blackandpink.UnknownFacility", on_delete=models.CASCADE
+                    ),
                 ),
             ],
         ),

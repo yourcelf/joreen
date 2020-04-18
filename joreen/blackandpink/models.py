@@ -1,14 +1,12 @@
 import json
 from django.db import models
-from django.utils import timezone
 from facilities.models import Facility, FacilityAdministrator
-from localflavor.us.models import USStateField, USPostalCodeField, PhoneNumberField
 import urllib
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.conf import settings
-from django.core import urlresolvers
-from jsonfield import JSONField
+from django.contrib.postgres.fields import JSONField
+from django.urls import reverse
 
 
 class FinishedManager(models.Manager):
@@ -126,11 +124,15 @@ class ContactCheck(models.Model):
         found_facility_differs_zoho_has = "found_facility_differs_zoho_has"
         found_facility_differs_zoho_lacks = "found_facility_differs_zoho_lacks"
 
-    update_run = models.ForeignKey(UpdateRun)
-    member = models.ForeignKey(MemberProfile)
+    update_run = models.ForeignKey(UpdateRun, on_delete=models.CASCADE)
+    member = models.ForeignKey(MemberProfile, on_delete=models.CASCADE)
     raw_facility_name = models.CharField(blank=True, max_length=255)
-    facility = models.ForeignKey(Facility, blank=True, null=True)
-    administrator = models.ForeignKey(FacilityAdministrator, blank=True, null=True)
+    facility = models.ForeignKey(
+        Facility, blank=True, null=True, on_delete=models.CASCADE
+    )
+    administrator = models.ForeignKey(
+        FacilityAdministrator, blank=True, null=True, on_delete=models.CASCADE
+    )
     entry_before = JSONField()
     entry_after = JSONField()
     search_result = JSONField()
@@ -187,7 +189,12 @@ class ContactCheck(models.Model):
             "<div style='color: #900; text-decoration: line-through'>-{}: {}</div>"
         )
         added_tmpl = "<div style='color: #090'>+{}: {}</div>"
-        changed_tmpl = "<div>{}: <span style='color: #900; text-decoration: line-through'>{}</span> <span style='color: #090'>{}</span></div>"
+        changed_tmpl = (
+            "<div>"
+            "{}: <span style='color: #900; text-decoration: line-through'>{}</span>"
+            " <span style='color: #090'>{}</span>"
+            "</div>"
+        )
         for key in sorted(removed):
             html.append(removed_tmpl.format(escape(key), escape(before[key])))
         for key in sorted(added):
@@ -214,9 +221,7 @@ class ContactCheck(models.Model):
         )
 
     def get_absolute_url(self):
-        return urlresolvers.reverse(
-            "admin:blackandpink_contactcheck_change", args=(self.pk,)
-        )
+        return reverse("admin:blackandpink_contactcheck_change", args=(self.pk,))
 
 
 class FacilityRun(models.Model):
@@ -270,9 +275,8 @@ class UnknownFacility(models.Model):
         name = escape(name)
         qname = urllib.parse.quote(name)
         return mark_safe(
-            "<a href='https://www.google.com/?q={}' target='_blank'>Google: {}</a>".format(
-                qname, name
-            )
+            f"<a href='https://www.google.com/?q={qname}' target='_blank'>"
+            f"Google: {name}</a>"
         )
 
     def zoho_address(self):
@@ -292,8 +296,8 @@ class UnknownFacility(models.Model):
 
 
 class UnknownFacilityMatch(models.Model):
-    unknown_facility = models.ForeignKey(UnknownFacility)
-    match = models.ForeignKey(Facility)
+    unknown_facility = models.ForeignKey(UnknownFacility, on_delete=models.CASCADE)
+    match = models.ForeignKey(Facility, on_delete=models.CASCADE)
     score = models.IntegerField()
     breakdown = JSONField()
 

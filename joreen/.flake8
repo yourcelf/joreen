@@ -1,0 +1,21 @@
+[flake8]
+per-file-ignores =
+  # Ignore unused imports (F401) and local redefinitions (F811) in test files
+  # (collides with pytest fixtures). Also ignore "Superfluous ignore" (X100).
+  **/test*.py: X100, F401, F811
+  */tests/fixtures.py: X100, F401, F811
+
+  # Ignore long lines in generated migrations files (E501) and superfluous
+  # ignore (X100).
+  **/migrations/*.py: X100, E501
+
+exclude =
+  node_modules
+
+# W503 and E203 are documentedly wrong per PEP8, and contrary to black.
+# https://lintlyci.github.io/Flake8Rules/rules/W503.html
+# https://gitlab.com/pycqa/flake8/issues/451
+ignore = W503, E203
+
+# Black's default
+max-line-length = 88

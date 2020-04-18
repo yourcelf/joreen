@@ -35,11 +35,18 @@ class Migration(migrations.Migration):
                 ("created", models.DateTimeField(auto_now_add=True)),
                 (
                     "administrator",
-                    models.ForeignKey(to="facilities.FacilityAdministrator"),
+                    models.ForeignKey(
+                        to="facilities.FacilityAdministrator", on_delete=models.CASCADE
+                    ),
                 ),
                 (
                     "facility",
-                    models.ForeignKey(to="facilities.Facility", null=True, blank=True),
+                    models.ForeignKey(
+                        to="facilities.Facility",
+                        null=True,
+                        blank=True,
+                        on_delete=models.CASCADE,
+                    ),
                 ),
             ],
         ),

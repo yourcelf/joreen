@@ -16,7 +16,10 @@ class Migration(migrations.Migration):
             model_name="contactcheck",
             name="administrator",
             field=models.ForeignKey(
-                blank=True, to="facilities.FacilityAdministrator", null=True
+                blank=True,
+                to="facilities.FacilityAdministrator",
+                null=True,
+                on_delete=models.CASCADE,
             ),
         ),
     ]

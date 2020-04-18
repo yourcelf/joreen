@@ -1,14 +1,12 @@
+from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
-from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.conf import settings
-from queue import Queue
 import traceback
 
 from facilities.models import FacilityAdministrator
 from stateparsers import AVAILABLE_STATES
 from blackandpink import zoho
-from blackandpink.blackandpink import Address, Profile, FacilityDirectory
+from blackandpink.blackandpink import Profile, FacilityDirectory
 from blackandpink.models import UpdateRun, MemberProfile, ContactCheck
 
 
@@ -63,9 +61,6 @@ def search(update_run, profile, member, facility_directory):
     entry_changed = address_changed or profile_match.status in (
         ContactCheck.STATUS.found_released_zoho_disagrees,
     )
-
-    entry_before = profile.zoho_profile
-    entry_after = ""
 
     cc = ContactCheck.objects.create(
         update_run=update_run,
@@ -129,7 +124,9 @@ def update_zoho(cc, facility_directory):
         raise Exception("Unknown cc status: {}".format(cc.status))
 
     cc.entry_after = zoho.update_profile(
-        update_url="{}{}".format(settings.SITE_URL, cc.get_absolute_url()),
+        update_url="https://{}{}".format(
+            Site.objects.get_current().domain, cc.get_absolute_url()
+        ),
         zoho_profile_id=cc.member.zoho_id,
         address_status=address_status,
         release_status=release_status,
@@ -200,7 +197,7 @@ def do_searches(update_run, facility_directory, searchable_profiles):
     """
     for profile in searchable_profiles:
         try:
-            cc = search(
+            search(
                 update_run=update_run,
                 facility_directory=facility_directory,
                 profile=profile,
@@ -209,7 +206,7 @@ def do_searches(update_run, facility_directory, searchable_profiles):
         except Exception as e:
             try:
                 member_number = profile.member.bp_member_number
-            except Exception as e:
+            except Exception:
                 member_number = None
             log_exception(update_run, e, member_number)
             continue

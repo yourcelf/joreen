@@ -63,7 +63,7 @@ class FacilityNameResult(models.Model):
     parsing/cleaning/associating logic.
     """
 
-    administrator = models.ForeignKey(FacilityAdministrator)
+    administrator = models.ForeignKey(FacilityAdministrator, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     facility_url = models.TextField(
         blank=True,
