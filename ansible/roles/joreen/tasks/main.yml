@@ -1,0 +1,97 @@
+---
+- name: Install joreen prerequisites
+  apt: pkg={{item}} state=installed
+  with_items:
+    - git
+    - python-virtualenv
+    - python-pip
+    - python-dev
+    - libxml2
+    - libxml2-dev
+    - libxslt1.1
+    - libxslt1-dev
+    - redis-server
+    #- lib32z1-dev
+    - libffi-dev
+    - libssl-dev
+    - build-essential
+    - python3.5
+    - python3.5-dev
+    - python3-pip
+  tags: joreen
+
+- name: Create inmatelocator scrapy virtualenv
+  command: virtualenv {{joreen_repo_dir}}facilities/venv -p python2.7 creates={{joreen_repo_dir}}facilities/venv
+  tags: joreen
+
+- name: Install inmatelocator python dependencies for scrapy
+  pip: >
+    requirements={{joreen_repo_dir}}facilities/requirements.txt
+    virtualenv={{joreen_repo_dir}}facilities/venv
+  tags: joreen
+
+- name: Copy inmatelocator celery upstart conf
+  template: >
+      src=etc_init_inmatelocator-celery.conf
+      dest=/etc/init/inmatelocator-celery.conf
+  notify: restart inmatelocator-celery
+  tags: joreen
+
+- name: Permissions for request cache
+  file: >
+    path={{joreen_repo_dir}}inmatelocator/cache/
+    state=directory
+    owner="www-data"
+    group="{{main_user_name}}"
+    mode="u=rwX,g=rwX,o=rX"
+    recurse=yes
+  tags: joreen, djangocode
+
+#
+# Redis performance for memory saving
+#
+
+- block:
+  # Disable transparent huge pages.
+  - name: Create /usr/lib/systemd
+    file: path=/usr/lib/systemd/system state=directory
+
+  - name: Copy disable-thp service template
+    template: src=disable-thp.service dest=/usr/lib/systemd/system/disable-thp.service
+    notify:
+     - systemctl daemon-reload
+     - restart disable-thp
+     - restart redis
+
+  - name: Enable disable-thp
+    systemd:
+      name: disable-thp.service
+      enabled: yes
+      daemon_reload: yes
+
+  - name: Disable redis aof persistence
+    lineinfile:
+      dest: /etc/redis/redis.conf
+      regexp: '^appendonly .*'
+      line: 'appendonly no'
+    notify: restart redis
+
+  - name: Disable redis rdb persistence
+    replace:
+      dest: /etc/redis/redis.conf
+      regexp: 'save (.*)$'
+      replace: '#save \1'
+    notify: restart redis
+
+  - name: Allow overcommit_memory on boot
+    lineinfile:
+      dest: /etc/sysctl.conf
+      line: "vm.overcommit_memory = 1"
+    tags: redis
+
+  - name: Allow overcommit now
+    command: sysctl vm.overcommit_memory=1
+    changed_when: false
+    notify: restart redis
+
+  tags: redis

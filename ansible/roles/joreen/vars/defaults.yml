@@ -1,0 +1,6 @@
+inmatelocator2:
+  wsgi_port: 3031
+  dir: "/var/local/inmatelocator2/"
+  postgres_password: "insecure"
+  zoho_authentication_token: "fail"
+

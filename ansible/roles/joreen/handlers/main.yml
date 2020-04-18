@@ -1,0 +1,19 @@
+---
+- name: stop inmatelocator-celery
+  service: name=inmatelocator-celery state=stopped
+
+- name: start inmatelocator-celery
+  service: name=inmatelocator-celery state=started
+
+- name: restart inmatelocator-celery
+  service: name=inmatelocator-celery state=restarted
+
+- name: systemctl daemon-reload
+  command: systemctl daemon-reload
+
+- name: restart disable-thp
+  systemd: name=disable-thp state=restarted
+
+- name: restart redis
+  service: name=redis state=restarted
+  

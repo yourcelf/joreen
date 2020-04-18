@@ -1,0 +1,12 @@
+---
+- name: systemctl daemon-reload
+  command: systemctl daemon-reload
+
+- name: stop gspreadsheetsproxy
+  service: name=gspreadsheetsproxy state=stopped
+
+- name: start gspreadsheetsproxy
+  service: name=gspreadsheetsproxy state=started
+
+- name: restart gspreadsheetsproxy
+  service: name=gspreadsheetsproxy state=restarted

@@ -1,0 +1,50 @@
+---
+- name: Install prerequisites
+  apt: pkg={{item}} state=installed
+  with_items:
+    - nodejs
+    - npm
+  tags: gspreadsheetsproxy
+
+- name: Copy nginx conf
+  template: src=etc_nginx_conf.d_gspreadsheetsproxy.conf dest=/etc/nginx/sites-available/gspreadsheetsproxy.conf
+  notify: restart nginx
+  tags: gspreadsheetsproxy
+
+- name: Enable nginx conf
+  file: src=/etc/nginx/sites-available/gspreadsheetsproxy.conf dest=/etc/nginx/sites-enabled/gspreadsheetsproxy.conf state=link force=yes
+  notify: restart nginx
+
+- name: Copy web app
+  git: >
+    repo=https://github.com/yourcelf/gspreadsheets-cors-proxy.git
+    dest=/var/local/gspreadsheets-cors-proxy/
+  notify:
+    - restart gspreadsheetsproxy
+    - restart nginx
+  tags: gspreadsheetsproxy
+
+- name: Install npm dependencies
+  npm: path=/var/local/gspreadsheets-cors-proxy
+  notify: restart gspreadsheetsproxy
+  tags: gspreadsheetsproxy
+
+- block:
+  - name: Create /usr/lib/systemd
+    file: path=/usr/lib/systemd/system state=directory
+
+  - name: Copy service template
+    template:
+      src: gspreadsheetsproxy.service
+      dest: /usr/lib/systemd/system/gspreadsheetsproxy.service
+    notify:
+     - systemctl daemon-reload
+     - restart gspreadsheetsproxy
+
+  - name: Enable service
+    systemd:
+      name: gspreadsheetsproxy
+      enabled: yes
+      daemon_reload: yes
+    notify:
+     - restart gspreadsheetsproxy

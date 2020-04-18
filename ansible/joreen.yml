@@ -1,0 +1,44 @@
+---
+- hosts: joreen
+  become: True
+  become_user: root
+  gather_facts: True
+  vars_files:
+    - vars/secrets.yml
+  roles:
+    - common
+    - mosh
+    - nginx
+    - postgresql
+    - monitored
+    - letsencrypt-nginx
+    - letsencrypt
+    # Inmatelocator
+    - role: django
+      django_domain: "joreen.tirl.org"
+      django_systemd: yes
+      django_upstart: no
+      django_celery: yes
+      django_python_version: "python3.5"
+      django_project_name: "inmatelocator"
+      django_repo_url: "git@bitbucket.org:yourcelf/inmatelocator2.git"
+      django_repo_dir: "{{joreen_repo_dir}}"
+      django_project_dir: "{{joreen_repo_dir}}inmatelocator/"
+      django_requirements_file: "{{joreen_repo_dir}}inmatelocator/shrinkwrap.txt"
+      django_venv_dir: "{{joreen_repo_dir}}inmatelocator/venv/"
+      django_static_dir: "{{joreen_repo_dir}}inmatelocator/static/"
+      django_media_dir: "{{joreen_repo_dir}}inmatelocator/media/"
+      django_id_rsa_private: "{{joreen_bitbucket_id_rsa_private}}"
+      django_id_rsa_public: "{{joreen_bitbucket_id_rsa_public}}"
+      django_wsgi_port: 3031
+      django_postgres_db: "{{joreen_postgres_db}}"
+      django_postgres_user: "{{joreen_postgres_user}}"
+      django_postgres_password: "{{joreen_postgres_password}}"
+      django_settings_template: "roles/joreen/templates/joreen_settings.py"
+      django_nginx_template: "roles/joreen/templates/joreen_nginx.conf"
+    - joreen
+  vars:
+    joreen_repo_dir: "/var/local/inmatelocator2/"
+    domain: joreen.tirl.org
+    letsencrypt_domains:
+      - joreen.tirl.org
