@@ -2,6 +2,7 @@
 import re
 
 from stateparsers.request_caching import get_caching_session
+from fuzzywuzzy import fuzz
 
 
 class LookupStatus(object):
@@ -123,7 +124,7 @@ class BaseStateSearch(LookupStatus):
         # Replace - with single space " "
         name = re.sub("-", " ", name)
         # Remove multiple spaces
-        name = re.sub("\s+", " ", name)
+        name = re.sub(r"\s+", " ", name)
         return name
 
 

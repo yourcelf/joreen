@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from facilities.models import *
+from facilities.models import AlternateName, Facility
 from joreen.admin_base import BaseAdmin
 
 

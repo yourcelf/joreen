@@ -1,5 +1,3 @@
-import re
-import requests
 import json
 
 from stateparsers.states import BaseStateSearch

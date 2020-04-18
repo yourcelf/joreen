@@ -1,12 +1,12 @@
 import traceback
 import re
-import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
 
 texas_unit_type_re = re.compile(
-    " (Unit|Complex|Transfer Facility|Prison|State Jail|Medical Facility|Geriatric Facility|Correctional (Center|Facility)|Treatment( Facility)?)$",
+    r" (Unit|Complex|Transfer Facility|Prison|State Jail|Medical Facility"
+    r"|Geriatric Facility|Correctional (Center|Facility)|Treatment( Facility)?)$",
     re.I,
 )
 
@@ -73,7 +73,7 @@ class Search(BaseStateSearch):
             params[number_type] = number
             try:
                 res = self.session.post(self.url, params)
-            except Exception as e:
+            except Exception:
                 self.errors.append(traceback.format_exc())
                 continue
 
@@ -107,6 +107,7 @@ class Search(BaseStateSearch):
                     name=name,
                     numbers=numbers,
                     search_terms=params,
+                    status=status,
                     raw_facility_name=unit_of_assignment,
                     result_url=result_url,
                     facilities=facilities,

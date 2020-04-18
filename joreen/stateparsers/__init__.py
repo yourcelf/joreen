@@ -5,8 +5,9 @@ from stateparsers.states import (
     florida,
     newyork,
     pennsylvania,
-    MinimumTermsError,
 )
+from stateparsers.states import MinimumTermsError  # noqa: F401
+
 
 name_map = {
     "federal": federal,

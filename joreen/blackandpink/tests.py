@@ -32,7 +32,9 @@ class TestAddressParsing(TestCase):
                 "Address_4": "",
                 "City": "Adelanto",
                 "DOC_Unit_Name": "",
-                "Facility_Add2_City_State_Zip": "F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301",
+                "Facility_Add2_City_State_Zip": (
+                    "F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301"
+                ),
                 "Facility_Chapter_Affiliation": "[]",
                 "Facility_Type": "",
                 "ID": "1118888000001338038",
@@ -103,8 +105,9 @@ class TestAddressMatching(TestCase):
             "Address_4": "",
             "City": "Huntsville",
             "DOC_Unit_Name": "Byrd",
-            "Facility_Add2_City_State_Zip": "Byrd Unit; 21 FM 247; Huntsville, TX \xa0"
-            "77320",
+            "Facility_Add2_City_State_Zip": (
+                "Byrd Unit; 21 FM 247; Huntsville, TX \xa077320"
+            ),
             "Facility_Chapter_Affiliation": "[]",
             "Facility_Type": "",
             "ID": "1118888000000185267",
@@ -176,8 +179,9 @@ class TestAddressMatching(TestCase):
             "Address_4": "",
             "City": "Sneads",
             "DOC_Unit_Name": "",
-            "Facility_Add2_City_State_Zip": "Apalachee Corr.- East; 35 Apalachee Drive; "
-            "Sneads, FL \xa032460",
+            "Facility_Add2_City_State_Zip": (
+                "Apalachee Corr.- East; 35 Apalachee Drive; Sneads, FL \xa032460"
+            ),
             "Facility_Chapter_Affiliation": "[]",
             "Facility_Type": "",
             "ID": "1118888000000181483",
@@ -256,7 +260,9 @@ class TestAddressMatching(TestCase):
             "Address_4": "",
             "City": "Adelanto",
             "DOC_Unit_Name": "",
-            "Facility_Add2_City_State_Zip": "F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301",
+            "Facility_Add2_City_State_Zip": (
+                "F.C.I. #1; P.O. Box 3725; Adelanto, CA 92301"
+            ),
             "Facility_Chapter_Affiliation": "[]",
             "Facility_Type": "",
             "ID": "1118888000001338038",
@@ -298,7 +304,9 @@ class TestAddressMatching(TestCase):
             "Address_4": "",
             "City": "San Quentin",
             "DOC_Unit_Name": "",
-            "Facility_Add2_City_State_Zip": "San Quentin S. P.; ; San Quentin, CA 94974",
+            "Facility_Add2_City_State_Zip": (
+                "San Quentin S. P.; ; San Quentin, CA 94974"
+            ),
             "Facility_Chapter_Affiliation": "[San Francisco]",
             "Facility_Type": "State",
             "ID": "1118888000000201003",

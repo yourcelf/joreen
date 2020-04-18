@@ -4,7 +4,7 @@ import pytest
 from stateparsers import AVAILABLE_STATES, get_searcher
 from stateparsers.tests.test_states import facilities
 
-# Create your tests here.
+
 def test_states(client):
     res = client.get("/api/states.json")
     data = json.loads(res.content.decode("utf-8"))

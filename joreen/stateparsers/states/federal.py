@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
 import json
-import time
-import requests
 
 from stateparsers.states import BaseStateSearch
 

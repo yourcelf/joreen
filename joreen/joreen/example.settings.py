@@ -1,4 +1,4 @@
-from default_settings import *
+from default_settings import *  # noqa: F401,F403
 
 ZOHO_APPLICATION_LINK_NAME = "..."
 ZOHO_PROFILE_VIEW_NAME = "..."

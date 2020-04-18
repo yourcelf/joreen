@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
 from urllib.parse import urlencode
-import re
-import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
@@ -36,7 +33,7 @@ class Search(BaseStateSearch):
             # Treat "supervised" as "released" for address purposes
             "AO": self.STATUS_RELEASED,  # Supervised
             # Absconder / Fugitive. Ignore for now.
-            #'AB': self.STATUS_INCARCERATED, # Absconder/Fugitive list
+            # 'AB': self.STATUS_INCARCERATED, # Absconder/Fugitive list
         }
         params = {
             "dcnumber": kwargs.get("number", ""),
@@ -44,7 +41,6 @@ class Search(BaseStateSearch):
             "FirstName": kwargs.get("first_name", ""),
         }
 
-        results_by_type_search = defaultdict(list)
         for type_search, status in result_types.items():
             query = {}
             query.update(params)

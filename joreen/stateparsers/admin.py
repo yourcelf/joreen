@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from stateparsers.models import FacilityNameResult, NetlocThrottle
+from stateparsers.models import FacilityNameResult
 from joreen.admin_base import BaseAdmin
 
 

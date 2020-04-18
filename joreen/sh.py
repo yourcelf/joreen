@@ -1,3 +1,12 @@
+# This is a set of convenience imports for use inside the django shell.  To
+# pull in most of the Django world and other things you might need inside the
+# Django shell, call:
+#
+#  >>> from sh import *
+#
+
+# flake8: noqa
+
 import re
 from imp import reload
 from collections import Counter

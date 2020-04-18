@@ -1,5 +1,4 @@
 import re
-import requests
 import lxml.html
 
 from stateparsers.states import BaseStateSearch
@@ -32,8 +31,6 @@ class Search(BaseStateSearch):
         return status, facilities
 
     def crawl(self, **kwargs):
-        from facilities.models import Facility
-
         res = self.session_nocache.get(self.url)
         root = lxml.html.fromstring(res.text)
         dfh_state_token = root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0]
@@ -59,13 +56,13 @@ class Search(BaseStateSearch):
 
         if kwargs.get("number"):
             number = kwargs["number"]
-            match = re.match("(\d\d)-?(\w)-?(\d\d\d\d)", number)
+            match = re.match(r"(\d\d)-?(\w)-?(\d\d\d\d)", number)
             if match:
                 params["M00_DIN_FLD1I"] = match.group(1)
                 params["M00_DIN_FLD2I"] = match.group(2)
                 params["M00_DIN_FLD3I"] = match.group(3)
             else:
-                match = re.match("(\w{8})-?(\w)", number)
+                match = re.match(r"(\w{8})-?(\w)", number)
                 if match:
                     params["M00_NYSID_FLD1I"] = match.group(1)
                     params["M00_NYSID_FLD2I"] = match.group(2)

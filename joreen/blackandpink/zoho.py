@@ -3,7 +3,6 @@ import re
 import json
 import requests
 import logging
-from collections import defaultdict
 
 from django.conf import settings
 from django.utils import timezone
@@ -29,10 +28,9 @@ def fetch_all(view_link_name, criteria=None):
 
     session = get_caching_session(cache_name="cache/zoho")
 
-    url = "https://creator.zoho.com/api/json/{application_link_name}/view/{view_link_name}"
-    url = url.format(
-        application_link_name=settings.ZOHO_APPLICATION_LINK_NAME,
-        view_link_name=view_link_name,
+    url = (
+        f"https://creator.zoho.com/api/json/{settings.ZOHO_APPLICATION_LINK_NAME}"
+        f"/view/{view_link_name}"
     )
     payload = {
         "authtoken": settings.ZOHO_AUTHENTICATION_TOKEN,
@@ -119,7 +117,10 @@ def update_row(view_link_name, form_name, params):
     """
     Docs: https://www.zoho.com/creator/help/api/rest-api/rest-api-edit-records.html
     """
-    shared_url = "https://creator.zoho.com/api/{ownername}/{format}/{applicationName}/view/{viewName}/record/update/"
+    shared_url = (
+        "https://creator.zoho.com/api/{ownername}/{format}"
+        "/{applicationName}/view/{viewName}/record/update/"
+    )
     url = shared_url.format(
         format="json",
         ownername=settings.ZOHO_OWNER_NAME,
@@ -147,7 +148,10 @@ def update_row(view_link_name, form_name, params):
 
 
 def insert_row(view_link_name, form_name, params):
-    url = "https://creator.zoho.com/api/{ownername}/{format}/{applicationName}/form/{formName}/record/add/".format(
+    url = (
+        "https://creator.zoho.com/api/{ownername}/{format}"
+        "/{applicationName}/form/{formName}/record/add/"
+    ).format(
         format="json",
         ownername=settings.ZOHO_OWNER_NAME,
         applicationName=settings.ZOHO_APPLICATION_LINK_NAME,
@@ -155,10 +159,7 @@ def insert_row(view_link_name, form_name, params):
         formName=form_name,
     )
 
-    payload = {
-        "authtoken": settings.ZOHO_AUTHENTICATION_TOKEN,
-        "scope": "creatorapi",
-    }
+    payload = {"authtoken": settings.ZOHO_AUTHENTICATION_TOKEN, "scope": "creatorapi"}
     payload.update(params)
 
     if settings.MOCK_ZOHO_UPDATES:
@@ -178,7 +179,7 @@ def insert_row(view_link_name, form_name, params):
                                     "Address_2": "123 Nowhere St",
                                     "City": "Bozeman",
                                     "Facility_Type": "**Personal Address**",
-                                    "ID": 1118888000004050003,
+                                    "ID": 1_118_888_000_004_050_003,
                                     "State": "MT",
                                     "Zip": "59715",
                                 },

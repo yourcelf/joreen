@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 from collections import defaultdict
+import warnings
 from fuzzywuzzy import fuzz
 import probablepeople
 import usaddress
@@ -107,7 +108,7 @@ class ProfileMatchResult(object):
         # Compare the matched facilities to our current address.
         facility_comparison = []
         for facility in matched_facilities:
-            match = self.profile.address.compare_to_facility(facility)
+            self.profile.address.compare_to_facility(facility)
             facility_comparison.append(
                 self.profile.address.compare_to_facility(facility)
             )
@@ -172,7 +173,6 @@ class Profile(object):
 
     def search(self):
         if not self.address:
-            search_args = []
             warnings.warn(
                 "Missing address for bp member number {}".format(self.bp_member_number)
             )
@@ -243,7 +243,7 @@ class Profile(object):
 
     @classmethod
     def _norm(cls, s):
-        return re.sub("[^\w]", "", (s or "").lower())
+        return re.sub(r"[^\w]", "", (s or "").lower())
 
     def compare_number(self, lookup_result):
         number_scores = {}
@@ -293,7 +293,7 @@ class Profile(object):
                 full_name = u"{first} {middle} {last}".format(
                     last=self.last_name, first=self.first_name, middle=self.middle_name
                 )
-            full_name = re.sub("\s+", " ", full_name)  # remove duplicate spaces
+            full_name = re.sub(r"\s+", " ", full_name)  # remove duplicate spaces
             if self.suffix:
                 full_name += u", {suffix}".format(suffix=self.suffix)
             score["full"] = ratio(full_name, lookup_result.name)
@@ -343,10 +343,10 @@ class Address(object):
         self.zoho_id = zoho_id
         self.zoho_key = zoho_key
 
-        self.zip = re.sub("[^\d-]", "", self.zip)
+        self.zip = re.sub(r"[^\d-]", "", self.zip)
 
     def validate(self):
-        if not re.match("\d{5}(-\d{4})?", self.zip):
+        if not re.match(r"\d{5}(-\d{4})?", self.zip):
             raise ValidationError("Invalid zip code")
 
     @classmethod
@@ -394,7 +394,10 @@ class Address(object):
 
     def flatten(self):
         parts = []
-        haz = lambda key: hasattr(self, key) and getattr(self, key)
+
+        def haz(key):
+            return hasattr(self, key) and getattr(self, key)
+
         if haz("name"):
             parts.append(self.name)
         if haz("address1"):
@@ -467,7 +470,7 @@ class Address(object):
             return bool(a1_tagged.get(key) or a2_tagged.get(key))
 
         def _address_part_norm(part):
-            return re.sub("[^\w\s]", "", part.lower().strip())
+            return re.sub(r"[^\w\s]", "", part.lower().strip())
 
         # Required fields
         for key in ("Recipient", "ZipCode", "StateName"):
@@ -623,7 +626,7 @@ class Address(object):
         """
         Find the Facility object in the database that best matches this
         address.
-        
+
         Return a tuple of (score, breakdown, facility).
          - score: "percent match" of facility -- 100 is a perfect match.
          - breakdown: a dict explaining components that went into the score.
@@ -687,7 +690,6 @@ class FacilityDirectory(object):
             if match.is_valid():
                 match.zoho_facility = zoho_facility
                 self.facility_matches[match.facility.id] = match
-                found = True
                 self.matches[key] = match
                 break
         else:

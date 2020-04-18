@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.conf import settings
 
 from stateparsers import AVAILABLE_STATES
 from blackandpink import zoho

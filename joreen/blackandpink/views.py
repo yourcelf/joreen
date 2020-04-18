@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import permission_required
 from blackandpink.models import UpdateRun, FacilityRun
 import blackandpink.tasks
 
-# Create your views here.
+
 @permission_required("blackandpink.add_updaterun")
 def start_update_run(request):
     try:
@@ -20,7 +20,6 @@ def start_update_run(request):
     return HttpResponse("Started")
 
 
-# Create your views here.
 @permission_required("blackandpink.add_facilityrun")
 def start_facility_run(request):
     try:

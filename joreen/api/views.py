@@ -1,5 +1,3 @@
-import json
-from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 
 from stateparsers import AVAILABLE_STATES, get_searcher, MinimumTermsError
@@ -62,7 +60,7 @@ def search(request):
     try:
         searcher = get_searcher(state)()
     except NotImplementedError:
-        return JsonResonse({"error": "Unsupported state"}, status=400)
+        return JsonResponse({"error": "Unsupported state"}, status=400)
 
     try:
         res = searcher.search(**kwargs)

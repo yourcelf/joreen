@@ -2,7 +2,13 @@ import json
 import subprocess
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-from facilities.models import *
+from facilities.models import (
+    AlternateName,
+    Facility,
+    FacilityType,
+    FacilityAdministrator,
+    FacilityOperator,
+)
 from stateparsers.states import BaseStateSearch
 
 

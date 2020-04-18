@@ -78,7 +78,7 @@ class Search(BaseStateSearch):
                 continue
             if "Previous Page" in text:
                 continue
-            if re.search("Page \d+ of \d+", text):
+            if re.search(r"Page \d+ of \d+", text):
                 continue
 
             name = "".join(row.xpath("(./td)[1]//text()"))
@@ -95,7 +95,7 @@ class Search(BaseStateSearch):
                 "map_url": "".join(row.xpath("(./td)[6]/a/@href")),
             }
 
-            result = self.add_result(
+            self.add_result(
                 name=name,
                 numbers=numbers,
                 search_terms=params,

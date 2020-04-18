@@ -1,7 +1,6 @@
 import os
 import subprocess
 from django.core.management.base import BaseCommand
-from facilities.models import *
 
 DEST = os.path.join(
     os.path.dirname(__file__), "..", "..", "fixtures", "facilities.json"
