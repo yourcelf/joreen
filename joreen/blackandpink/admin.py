@@ -2,7 +2,6 @@ from django.contrib import admin
 
 from blackandpink.models import (
     UpdateRun,
-    MemberProfile,
     ContactCheck,
     UnknownFacility,
     UnknownFacilityMatch,
@@ -149,7 +148,10 @@ class UnknownFacilityAdmin(BaseAdmin):
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-        extra_context["facilityrun_latest"] = FacilityRun.objects.latest()
+        try:
+            extra_context["facilityrun_latest"] = FacilityRun.objects.latest()
+        except FacilityRun.DoesNotExist:
+            extra_context["facilityrun_latest"] = None
         try:
             started = FacilityRun.objects.get_unfinished()
         except FacilityRun.DoesNotExist:
