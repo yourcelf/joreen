@@ -5,12 +5,13 @@ from django.db import models
 
 from facilities.models import FacilityAdministrator, Facility
 
+
 class NetlocThrottleManager(models.Manager):
     def touch(self, url, seconds):
         netloc = urlparse(url).netloc
         self.update_or_create(
-                netloc=netloc,
-                defaults={'wait_until': time.time() + seconds})
+            netloc=netloc, defaults={"wait_until": time.time() + seconds}
+        )
 
     def block(self, url):
         netloc = urlparse(url).netloc
@@ -21,12 +22,13 @@ class NetlocThrottleManager(models.Manager):
 
         delta = model.wait_until - time.time()
         if delta <= 0:
-            #print("RELEASE", url, time.time())
+            # print("RELEASE", url, time.time())
             return False
 
-        #print("Waiting...", url, time.time(), delta)
+        # print("Waiting...", url, time.time(), delta)
         time.sleep(delta)
         return self.block(url)
+
 
 class NetlocThrottle(models.Model):
     netloc = models.CharField(unique=True, max_length=255)
@@ -41,16 +43,18 @@ class NetlocThrottle(models.Model):
         return self.netloc
 
     class Meta:
-        app_label = 'stateparsers'
+        app_label = "stateparsers"
+
 
 class FacilityNameResultManager(models.Manager):
     def log_name(self, admin_name, facility_name, facility_url=""):
         obj, created = self.get_or_create(
             administrator=FacilityAdministrator.objects.get(name=admin_name),
             name=facility_name,
-            facility_url=facility_url
+            facility_url=facility_url,
         )
         return obj
+
 
 class FacilityNameResult(models.Model):
     """
@@ -58,10 +62,13 @@ class FacilityNameResult(models.Model):
     DOC search pages.  Used to test accuracy of name
     parsing/cleaning/associating logic.
     """
+
     administrator = models.ForeignKey(FacilityAdministrator)
     name = models.CharField(max_length=255)
-    facility_url = models.TextField(blank=True,
-            help_text="URL to the facility in question if provided by search site")
+    facility_url = models.TextField(
+        blank=True,
+        help_text="URL to the facility in question if provided by search site",
+    )
 
     created = models.DateTimeField(auto_now_add=True)
 
@@ -74,6 +81,6 @@ class FacilityNameResult(models.Model):
         return self.name
 
     class Meta:
-        app_label = 'stateparsers'
+        app_label = "stateparsers"
         verbose_name = "Facility name reported by search backend"
         verbose_name_plural = "Facility names reported by search backends"

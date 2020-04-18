@@ -18,12 +18,14 @@ import blackandpink.blackandpink as bp
 import usaddress
 import probablepeople
 
+
 def get_zoho_address(name):
     data = zoho.fetch_all_facilities()
     for d in data:
-        if d['Address_1_Facility'] == name:
+        if d["Address_1_Facility"] == name:
             return Address.from_zoho(d)
     raise Exception("Not found")
+
 
 def get_facility_address(name=None, **kwargs):
     if name:

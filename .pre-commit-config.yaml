@@ -1,0 +1,25 @@
+---
+repos:
+  - repo: https://github.com/ambv/black
+    rev: 19.10b0
+    hooks:
+      - id: black
+        language: python
+        language_version: python3.6
+        files: ^joreen/
+        exclude: ^joreen/node_modules
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.0.0
+    hooks:
+      - id: requirements-txt-fixer
+        files: "^(requirements.txt|shrinkwrap.txt|dev-requirements.txt)$"
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: check-merge-conflict
+        name: Check for unresolved merge conflict strings
+      - id: flake8
+        files: '^joreen/.*\.py$'
+        exclude: "^(venv|joreen/node_modules)"
+        additional_dependencies: ["flake8-per-file-ignores"]
+        args: ["--config=joreen/.flake8"]

@@ -8,9 +8,12 @@ from blackandpink import zoho
 from blackandpink.blackandpink import Address
 from blackandpink.models import UnknownFacility, UnknownFacilityMatch, FacilityRun
 
+
 class Command(BaseCommand):
-    help = "Attempt to match all zoho facilities with known facilities, and " \
-           "create UnknownFacility objects for any that are not recognized."
+    help = (
+        "Attempt to match all zoho facilities with known facilities, and "
+        "create UnknownFacility objects for any that are not recognized."
+    )
 
     def handle(self, *args, **options):
         zoho_facilities = zoho.fetch_all_facilities()
@@ -20,44 +23,46 @@ class Command(BaseCommand):
         existing_unknown = 0
         new_unknown = 0
         for zoho_facility in zoho_facilities:
-            if "Personal" in zoho_facility.get('Facility_Type', ''):
+            if "Personal" in zoho_facility.get("Facility_Type", ""):
                 continue
             address = Address.from_zoho(zoho_facility)
 
-            if not (address.state in AVAILABLE_STATES or
-                    zoho_facility.get('Facility_Type') == 'Federal'):
+            if not (
+                address.state in AVAILABLE_STATES
+                or zoho_facility.get("Facility_Type") == "Federal"
+            ):
                 continue
 
             current_count = 0
-            if zoho_facility['Mailing_Address_Date_Current'] != '[]':
-                current_count = len(zoho_facility['Mailing_Address_Date_Current'].split('],'))
+            if zoho_facility["Mailing_Address_Date_Current"] != "[]":
+                current_count = len(
+                    zoho_facility["Mailing_Address_Date_Current"].split("],")
+                )
             uf_defaults = {
-                'state': address.state or '',
-                'flat_address': address.flatten(),
-                'current_address_count': current_count,
-                'address_valid': True,
-                'comment': ''
+                "state": address.state or "",
+                "flat_address": address.flatten(),
+                "current_address_count": current_count,
+                "address_valid": True,
+                "comment": "",
             }
 
             try:
                 address.validate()
             except ValidationError as e:
-                uf_defaults['comment'] = str(e)
-                uf_defaults['address_valid'] = False
+                uf_defaults["comment"] = str(e)
+                uf_defaults["address_valid"] = False
                 UnknownFacility.objects.update_or_create(
-                    zoho_id=zoho_facility['ID'],
-                    defaults=uf_defaults
+                    zoho_id=zoho_facility["ID"], defaults=uf_defaults
                 )
                 continue
 
             matches = address.find_matching_facilities()
             if matches and matches[0].is_valid():
                 found += 1
-                UnknownFacility.objects.filter(zoho_id=zoho_facility['ID']).delete()
+                UnknownFacility.objects.filter(zoho_id=zoho_facility["ID"]).delete()
             else:
                 uf, created = UnknownFacility.objects.update_or_create(
-                    zoho_id=zoho_facility['ID'],
-                    defaults=uf_defaults
+                    zoho_id=zoho_facility["ID"], defaults=uf_defaults
                 )
                 if created:
                     new_unknown += 1
@@ -67,10 +72,10 @@ class Command(BaseCommand):
                 ufms = []
                 for match in matches:
                     ufm, created = UnknownFacilityMatch.objects.update_or_create(
-                            unknown_facility=uf,
-                            match=match.facility,
-                            defaults={'score': match.score,
-                                      'breakdown': match.breakdown})
+                        unknown_facility=uf,
+                        match=match.facility,
+                        defaults={"score": match.score, "breakdown": match.breakdown},
+                    )
                     ufms.append(ufm)
                 # Clear any prior UnknownFacilityMatch'es that are no longer
                 # relevant by asserting that this list of ufm's is the whole

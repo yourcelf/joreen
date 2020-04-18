@@ -7,6 +7,7 @@ from stateparsers.request_caching import ThrottleSession
 
 _session = ThrottleSession()
 
+
 class Search(BaseStateSearch):
     administrator_name = "New York"
     minimum_search_terms = [["last_name"], ["number"]]
@@ -18,6 +19,7 @@ class Search(BaseStateSearch):
 
     def get_facilities_and_status(self, facility_name, raw_status):
         from facilities.models import Facility
+
         if raw_status == "IN CUSTODY":
             status = self.STATUS_INCARCERATED
             facilities = Facility.objects.find_by_name("New York", facility_name)
@@ -43,7 +45,7 @@ class Search(BaseStateSearch):
 
         post_data = {
             "K01": "WINQ000",
-            "DFH_STATE_TOKEN": dfh_state_token, 
+            "DFH_STATE_TOKEN": dfh_state_token,
             "DFH_MAP_STATE_TOKEN": "",
             "M00_MID_NAMEI": "",
             "M00_NAME_SUFXI": "",
@@ -55,8 +57,8 @@ class Search(BaseStateSearch):
             "M00_NYSID_FLD2I": "",
         }
 
-        if kwargs.get('number'):
-            number = kwargs['number']
+        if kwargs.get("number"):
+            number = kwargs["number"]
             match = re.match("(\d\d)-?(\w)-?(\d\d\d\d)", number)
             if match:
                 params["M00_DIN_FLD1I"] = match.group(1)
@@ -75,18 +77,27 @@ class Search(BaseStateSearch):
             post_data.update(params)
             res = self.session.post(self.post_url, post_data)
 
-            if "The inmate you have chosen has multiple commitments to NYS DOCCS" in res.text:
+            if (
+                "The inmate you have chosen has multiple commitments to NYS DOCCS"
+                in res.text
+            ):
                 root = lxml.html.fromstring(res.text)
                 post_data = {
-                    "M12_SEL_DINI": root.xpath("//input[@name='M12_SEL_DINI']/@value")[0],
+                    "M12_SEL_DINI": root.xpath("//input[@name='M12_SEL_DINI']/@value")[
+                        0
+                    ],
                     "K01": root.xpath("//input[@name='K01']/@value")[0],
                     "K02": root.xpath("//input[@name='K02']/@value")[0],
                     "K03": root.xpath("//input[@name='K03']/@value")[0],
                     "K04": root.xpath("//input[@name='K03']/@value")[0],
                     "K05": root.xpath("//input[@name='K03']/@value")[0],
                     "K06": root.xpath("//input[@name='K03']/@value")[0],
-                    "DFH_STATE_TOKEN": root.xpath("//input[@name='DFH_STATE_TOKEN']/@value")[0],
-                    "DFH_MAP_STATE_TOKEN": root.xpath("//input[@name='DFH_MAP_STATE_TOKEN']/@value")[0],
+                    "DFH_STATE_TOKEN": root.xpath(
+                        "//input[@name='DFH_STATE_TOKEN']/@value"
+                    )[0],
+                    "DFH_MAP_STATE_TOKEN": root.xpath(
+                        "//input[@name='DFH_MAP_STATE_TOKEN']/@value"
+                    )[0],
                     "din1": root.xpath("//input[@name='din1']/@value")[0],
                 }
                 url = self.url + "/GCA00P00/WIQ2/WINQ120"
@@ -96,9 +107,13 @@ class Search(BaseStateSearch):
 
             if "Identifying and Location Information" in res.text:
                 root = lxml.html.fromstring(res.text)
-                facility_name = "".join(root.xpath("//td[@headers='t1g']/text()")).strip()
+                facility_name = "".join(
+                    root.xpath("//td[@headers='t1g']/text()")
+                ).strip()
                 raw_status = "".join(root.xpath("//td[@headers='t1f']//text()")).strip()
-                status, facilities = self.get_facilities_and_status(facility_name, raw_status)
+                status, facilities = self.get_facilities_and_status(
+                    facility_name, raw_status
+                )
                 name = "".join(root.xpath("//td[@headers='t1b']/text()")).strip()
                 numbers = {
                     "din": "".join(root.xpath("//td[@headers='t1a']/text()")).strip()
@@ -114,15 +129,27 @@ class Search(BaseStateSearch):
                     # extra
                     extra=dict(
                         sex="".join(root.xpath("//td[@headers='t1c']/text()")),
-                        date_of_birth="".join(root.xpath("//td[@headers='t1d']/text()")),
+                        date_of_birth="".join(
+                            root.xpath("//td[@headers='t1d']/text()")
+                        ),
                         race="".join(root.xpath("//td[@headers='t1e']/text()")),
                         status=status,
-                        date_received_original="".join(root.xpath("//td[@headers='t1h']/text()")),
-                        date_received_current="".join(root.xpath("//td[@headers='t1i']/text()")),
-                        admission_type="".join(root.xpath("//td[@headers='t1j']/text()")),
-                        county_of_commitment="".join(root.xpath("//td[@headers='t1k']/text()")),
-                        latest_release_date_if_released="".join(root.xpath("//td[@headers='t1l']/text()")),
-                    )
+                        date_received_original="".join(
+                            root.xpath("//td[@headers='t1h']/text()")
+                        ),
+                        date_received_current="".join(
+                            root.xpath("//td[@headers='t1i']/text()")
+                        ),
+                        admission_type="".join(
+                            root.xpath("//td[@headers='t1j']/text()")
+                        ),
+                        county_of_commitment="".join(
+                            root.xpath("//td[@headers='t1k']/text()")
+                        ),
+                        latest_release_date_if_released="".join(
+                            root.xpath("//td[@headers='t1l']/text()")
+                        ),
+                    ),
                 )
             else:
                 self.errors.append("Couldn't parse information by that number.")
@@ -132,7 +159,7 @@ class Search(BaseStateSearch):
             res = self.session.post(self.post_url, post_data)
             root = lxml.html.fromstring(res.text)
             for row in root.xpath("//table[@id='dinlist']//tr"):
-                tds = row.xpath('.//td')
+                tds = row.xpath(".//td")
                 if len(tds) != 7:
                     continue
 
@@ -140,24 +167,41 @@ class Search(BaseStateSearch):
                 if not name:
                     continue
 
-                facility_name = "".join(row.xpath(".//td[@headers='fac']//text()")).strip()
-                raw_status = "".join(row.xpath(".//td[@headers='stat']//text()")).strip()
-                status, facilities = self.get_facilities_and_status(facility_name, raw_status)
+                facility_name = "".join(
+                    row.xpath(".//td[@headers='fac']//text()")
+                ).strip()
+                raw_status = "".join(
+                    row.xpath(".//td[@headers='stat']//text()")
+                ).strip()
+                status, facilities = self.get_facilities_and_status(
+                    facility_name, raw_status
+                )
 
                 self.add_result(
                     name=name,
-                    numbers={"din": "".join(row.xpath(".//td[@headers='din']//input[@type='submit']/@value")).strip()},
+                    numbers={
+                        "din": "".join(
+                            row.xpath(
+                                ".//td[@headers='din']//input[@type='submit']/@value"
+                            )
+                        ).strip()
+                    },
                     search_terms=params,
                     raw_facility_name=facility_name,
                     status=status,
                     facilities=facilities,
-                    result_url = res.url,
-
+                    result_url=res.url,
                     # extra
                     extra=dict(
                         sex="".join(row.xpath(".//td[@headers='sex']//text()")).strip(),
-                        date_of_birth="".join(row.xpath(".//td[@headers='dob']//text()")).strip(),
-                        status="".join(row.xpath(".//td[@headers='stat']//text()")).strip(),
-                        race="".join(row.xpath(".//td[@headers='race']//text()")).strip(),
-                    )
+                        date_of_birth="".join(
+                            row.xpath(".//td[@headers='dob']//text()")
+                        ).strip(),
+                        status="".join(
+                            row.xpath(".//td[@headers='stat']//text()")
+                        ).strip(),
+                        race="".join(
+                            row.xpath(".//td[@headers='race']//text()")
+                        ).strip(),
+                    ),
                 )

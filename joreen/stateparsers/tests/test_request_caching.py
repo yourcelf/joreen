@@ -3,15 +3,18 @@ import pytest
 
 from stateparsers.request_caching import get_caching_session
 
+
 @pytest.fixture
 def throttle():
     return 5
+
 
 @pytest.fixture
 def caching_session(throttle):
     session = get_caching_session("cache/test_cache", throttle)
     session.cache.clear()
     return session
+
 
 @pytest.mark.django_db
 def test_uses_cache(caching_session, throttle):

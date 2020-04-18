@@ -6,8 +6,7 @@ from facilities.models import Facility
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         pa_scis = Facility.objects.filter(
-            name__startswith="SCI",
-            administrator__name="Pennsylvania"
+            name__startswith="SCI", administrator__name="Pennsylvania"
         )
         for fac in pa_scis:
             fac.address1 = "Smart Communications/PADOC"

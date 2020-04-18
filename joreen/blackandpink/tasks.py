@@ -3,7 +3,8 @@ from blackandpink.models import UpdateRun, FacilityRun
 
 from celery import shared_task
 
-@shared_task(name='joreen.blackandpink.tasks.do_update_run')
+
+@shared_task(name="joreen.blackandpink.tasks.do_update_run")
 def do_update_run():
     try:
         UpdateRun.objects.get_unfinished()
@@ -12,7 +13,8 @@ def do_update_run():
         pass
     call_command("update_profiles")
 
-@shared_task(name='joreen.blackandpink.tasks.do_facility_run')
+
+@shared_task(name="joreen.blackandpink.tasks.do_facility_run")
 def do_facility_run():
     try:
         FacilityRun.objects.get_unfinished()

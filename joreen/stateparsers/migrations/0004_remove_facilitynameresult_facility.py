@@ -7,12 +7,9 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('stateparsers', '0003_netlocthrottle'),
+        ("stateparsers", "0003_netlocthrottle"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='facilitynameresult',
-            name='facility',
-        ),
+        migrations.RemoveField(model_name="facilitynameresult", name="facility",),
     ]

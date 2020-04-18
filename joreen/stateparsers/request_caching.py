@@ -17,20 +17,22 @@ from requests.hooks import dispatch_hook
 from requests_cache import backends
 from requests_cache.compat import basestring
 
+
 class ThrottleSession(OriginalSession):
     """
     A request session that throttles requests per netloc.
     """
+
     netloc_log = {}
-    throttle_duration = 2 # seconds
+    throttle_duration = 2  # seconds
     max_retries = 2
 
     def send(self, request, **kwargs):
         from stateparsers.models import NetlocThrottle
+
         # This method should only be called if a request is *not* cached.  If
         # that's the case, we want to throttle our upstream requests to play
         # nice.
-
 
         # Retry a connection if it fails, but with a good long pause in
         # between.
@@ -39,7 +41,7 @@ class ThrottleSession(OriginalSession):
             NetlocThrottle.objects.block(request.url)
             # Fend off requests while we make ours.
             NetlocThrottle.objects.touch(request.url, self.throttle_duration)
-            #print("REQUEST:", request.method, request.url, request.body)
+            # print("REQUEST:", request.method, request.url, request.body)
             try:
                 # Make the request (actual net traffic)
                 res = super(ThrottleSession, self).send(request, **kwargs)
@@ -58,25 +60,30 @@ class ThrottleSession(OriginalSession):
         NetlocThrottle.objects.touch(request.url, self.throttle_duration)
         return res
 
+
 def get_caching_session(cache_name="cache/stateparsers", netloc_throttle=2):
     cache_name = os.path.join(settings.BASE_DIR, cache_name)
+
     class SessionFactory(CachedSession):
         throttle_duration = netloc_throttle
+
         def __init__(self):
             super(SessionFactory, self).__init__(
                 cache_name=cache_name,
-                backend=backends.create_backend('redis', cache_name, {}),
-                expire_after=60*60*24,
+                backend=backends.create_backend("redis", cache_name, {}),
+                expire_after=60 * 60 * 24,
                 allowable_codes=(200, 301, 302, 307),
-                allowable_methods=('GET', 'POST')
+                allowable_methods=("GET", "POST"),
             )
 
     return SessionFactory()
+
 
 ####################################################################################
 # Te below is duplicated from requests_cache so that we can have a session
 # factory with a different parent class, the better to implement throttling.
 ####################################################################################
+
 
 def _normalize_parameters(params):
     """ If builtin dict is passed as parameter, returns sorted list
@@ -86,13 +93,21 @@ def _normalize_parameters(params):
         return sorted(params.items(), key=itemgetter(0))
     return params
 
+
 class CachedSession(ThrottleSession):
     """ Requests ``Sessions`` with caching support.
     """
 
-    def __init__(self, cache_name='cache', backend=None, expire_after=None,
-                 allowable_codes=(200,), allowable_methods=('GET',),
-                 old_data_on_error=False, **backend_options):
+    def __init__(
+        self,
+        cache_name="cache",
+        backend=None,
+        expire_after=None,
+        allowable_codes=(200,),
+        allowable_methods=("GET",),
+        old_data_on_error=False,
+        **backend_options
+    ):
         """
         :param cache_name: for ``sqlite`` backend: cache file will start with this prefix,
                            e.g ``cache.sqlite``
@@ -123,8 +138,7 @@ class CachedSession(ThrottleSession):
         :param old_data_on_error: If `True` it will return expired cached response if update fails
         """
         if backend is None or isinstance(backend, basestring):
-            self.cache = backends.create_backend(backend, cache_name,
-                                                 backend_options)
+            self.cache = backends.create_backend(backend, cache_name, backend_options)
         else:
             self.cache = backend
         self._cache_name = cache_name
@@ -140,8 +154,10 @@ class CachedSession(ThrottleSession):
         super(CachedSession, self).__init__()
 
     def send(self, request, **kwargs):
-        if (self._is_cache_disabled
-            or request.method not in self._cache_allowable_methods):
+        if (
+            self._is_cache_disabled
+            or request.method not in self._cache_allowable_methods
+        ):
             response = super(CachedSession, self).send(request, **kwargs)
             response.from_cache = False
             return response
@@ -176,12 +192,13 @@ class CachedSession(ThrottleSession):
 
         # dispatch hook here, because we've removed it before pickling
         response.from_cache = True
-        response = dispatch_hook('response', request.hooks, response, **kwargs)
+        response = dispatch_hook("response", request.hooks, response, **kwargs)
         return response
 
     def request(self, method, url, params=None, data=None, **kwargs):
         response = super(CachedSession, self).request(
-            method, url,
+            method,
+            url,
             _normalize_parameters(params),
             _normalize_parameters(data),
             **kwargs
@@ -191,9 +208,7 @@ class CachedSession(ThrottleSession):
 
         main_key = self.cache.create_key(response.request)
         for r in response.history:
-            self.cache.add_key_mapping(
-                self.cache.create_key(r.request), main_key
-            )
+            self.cache.add_key_mapping(self.cache.create_key(r.request), main_key)
         return response
 
     @contextmanager
@@ -214,9 +229,11 @@ class CachedSession(ThrottleSession):
     def __repr__(self):
         return (
             "<CachedSession(%s('%s', ...), expire_after=%s, "
-            "allowable_methods=%s)>" % (
-                self.cache.__class__.__name__, self._cache_name,
-                self._cache_expire_after, self._cache_allowable_methods
+            "allowable_methods=%s)>"
+            % (
+                self.cache.__class__.__name__,
+                self._cache_name,
+                self._cache_expire_after,
+                self._cache_allowable_methods,
             )
         )
-

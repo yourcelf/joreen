@@ -3,23 +3,27 @@ import re
 
 from stateparsers.request_caching import get_caching_session
 
+
 class LookupStatus(object):
     STATUS_INCARCERATED = "Incarcerated"
     STATUS_RELEASED = "Released"
     STATUS_UNKNOWN = "Unknown"
 
+
 class LookupResult(LookupStatus):
-    kwargs = ['name',
-              'numbers',
-              'status',
-              'facilities',
-              'raw_facility_name',
-              'facility_url',
-              'search_url',
-              'result_url',
-              'search_terms',
-              'administrator_name',
-              'extra']
+    kwargs = [
+        "name",
+        "numbers",
+        "status",
+        "facilities",
+        "raw_facility_name",
+        "facility_url",
+        "search_url",
+        "result_url",
+        "search_terms",
+        "administrator_name",
+        "extra",
+    ]
 
     def __init__(self, **kwargs):
         for kwarg in self.kwargs:
@@ -29,10 +33,12 @@ class LookupResult(LookupStatus):
         dct = {}
         for key in self.kwargs:
             dct[key] = getattr(self, key)
-        dct['facilities'] = list(map(lambda f: f.to_result_dict(), dct['facilities']))
+        dct["facilities"] = list(map(lambda f: f.to_result_dict(), dct["facilities"]))
         return dct
 
+
 _session = get_caching_session()
+
 
 class BaseStateSearch(LookupStatus):
 
@@ -52,6 +58,7 @@ class BaseStateSearch(LookupStatus):
         # Import here rather than top-level
         # https://github.com/django/django-localflavor/issues/203
         from stateparsers.models import FacilityNameResult
+
         self.check_minimum_terms(kwargs)
         self.errors = []
         self.results = []
@@ -59,22 +66,26 @@ class BaseStateSearch(LookupStatus):
         for result in self.results:
             if result.raw_facility_name:
                 FacilityNameResult.objects.log_name(
-                    self.administrator_name, result.raw_facility_name, result.facility_url)
-        return {'results': self.results, 'errors': self.errors}
+                    self.administrator_name,
+                    result.raw_facility_name,
+                    result.facility_url,
+                )
+        return {"results": self.results, "errors": self.errors}
 
     def add_result(self, **kwargs):
         # Import here rather than top-level
         # https://github.com/django/django-localflavor/issues/203
         from stateparsers.models import Facility
+
         opts = {
-            'administrator_name': self.administrator_name,
-            'status': self.STATUS_UNKNOWN,
-            'raw_facility_name': '',
-            'facility_url': '',
-            'facilities': Facility.objects.none(),
-            'search_url': self.url,
-            'result_url': None,
-            'extra': None
+            "administrator_name": self.administrator_name,
+            "status": self.STATUS_UNKNOWN,
+            "raw_facility_name": "",
+            "facility_url": "",
+            "facilities": Facility.objects.none(),
+            "search_url": self.url,
+            "result_url": None,
+            "extra": None,
         }
         opts.update(kwargs)
         result = LookupResult(**opts)
@@ -86,6 +97,7 @@ class BaseStateSearch(LookupStatus):
         # Import here rather than top-level
         # https://github.com/django/django-localflavor/issues/203
         from localflavor.us.us_states import STATES_NORMALIZED
+
         abbr = re.sub("[^a-z ]", "", abbr.lower())
         return STATES_NORMALIZED.get(abbr)
 
@@ -100,7 +112,9 @@ class BaseStateSearch(LookupStatus):
             else:
                 return True
         found_terms = [k for k in kwargs.keys() if k in self._search_terms]
-        raise MinimumTermsError(self.administrator_name, self.minimum_search_terms, found_terms)
+        raise MinimumTermsError(
+            self.administrator_name, self.minimum_search_terms, found_terms
+        )
 
     @classmethod
     def normalize_name(cls, name):
@@ -118,7 +132,9 @@ class MinimumTermsError(Exception):
         self.state = state
         self.minimum_terms = minimum_terms
         super(MinimumTermsError, self).__init__(
-            "{} requires one of {}.  {} given.".format(state, minimum_terms, found_terms)
+            "{} requires one of {}.  {} given.".format(
+                state, minimum_terms, found_terms
+            )
         )
 
 
@@ -127,20 +143,22 @@ def fuzzy_match_address(address, choices):
     for choice in choices:
         score = []
         # Zip handling
-        if address.get('state') is not None and address.get('state') != choice.get('state'):
+        if address.get("state") is not None and address.get("state") != choice.get(
+            "state"
+        ):
             continue
-        z1 = address.get('zip')
-        z2 = choice.get('zip')
+        z1 = address.get("zip")
+        z2 = choice.get("zip")
         if z1 and z2:
             score.append(fuzz.partial_ratio(z1, z2))
         # City, org, address
         for key in ["city", "address1", "organization"]:
-           v1 = address.get(key)
-           v2 = choice.get(key)
-           if v1 is not None and v2 is not None:
-               v1 = re.sub('[^a-z0-9 ]', '', v1.lower())
-               v2 = re.sub('[^a-z0-9 ]', '', v2.lower())
-               score.append(fuzz.ratio(v1, v2))
+            v1 = address.get(key)
+            v2 = choice.get(key)
+            if v1 is not None and v2 is not None:
+                v1 = re.sub("[^a-z0-9 ]", "", v1.lower())
+                v2 = re.sub("[^a-z0-9 ]", "", v2.lower())
+                score.append(fuzz.ratio(v1, v2))
         if score:
             scores.append((sum(score) / float(len(score)), choice))
 
@@ -149,5 +167,3 @@ def fuzzy_match_address(address, choices):
 
     scores.sort()
     return scores[-1][0], scores[-1][1]
-
-

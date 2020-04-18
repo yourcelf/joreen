@@ -4,9 +4,11 @@ import lxml.html
 
 from stateparsers.states import BaseStateSearch
 from stateparsers.request_caching import ThrottleSession
+
 _session = ThrottleSession()
 
 CERT_BUNDLE = os.path.join(os.path.dirname(__file__), "california.pem")
+
 
 class Search(BaseStateSearch):
     administrator_name = "California"
@@ -26,12 +28,16 @@ class Search(BaseStateSearch):
         res = self.session.get(self.auth_url, verify=CERT_BUNDLE)
         root = lxml.html.fromstring(res.text)
         data = {
-            '__EVENTTARGET': "",
-            '__EVENTARGUMENT': "",
-            '__VIEWSTATE': ''.join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
-            '__VIEWSTATEGENERATOR': ''.join(root.xpath('//input[@id="__VIEWSTATEGENERATOR"]/@value')),
-            "__EVENTVALIDATION": "".join(root.xpath('//input[@id="__EVENTVALIDATION"]/@value')),
-            'text': ''.join(root.xpath('//textarea[@name="text"]/text()')),
+            "__EVENTTARGET": "",
+            "__EVENTARGUMENT": "",
+            "__VIEWSTATE": "".join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
+            "__VIEWSTATEGENERATOR": "".join(
+                root.xpath('//input[@id="__VIEWSTATEGENERATOR"]/@value')
+            ),
+            "__EVENTVALIDATION": "".join(
+                root.xpath('//input[@id="__EVENTVALIDATION"]/@value')
+            ),
+            "text": "".join(root.xpath('//textarea[@name="text"]/text()')),
             "ctl00$LocatorPublicPageContent$btnAccept": "Agree",
         }
         self.session.post(self.auth_url, data)
@@ -50,21 +56,24 @@ class Search(BaseStateSearch):
             "__LASTFOCUS": "",
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
-            "__EVENTVALIDATION": ''.join(root.xpath('//input[@id="__EVENTVALIDATION"]/@value')),
-            "__VIEWSTATE": ''.join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
-
+            "__EVENTVALIDATION": "".join(
+                root.xpath('//input[@id="__EVENTVALIDATION"]/@value')
+            ),
+            "__VIEWSTATE": "".join(root.xpath('//input[@id="__VIEWSTATE"]/@value')),
         }
         query.update(params)
         res = self.session.post(self.url, query)
 
         # Now parse the results.
         root = lxml.html.fromstring(res.text)
-        rows = root.xpath('//table[@id="ctl00_LocatorPublicPageContent_gvGridView"]//tr')
+        rows = root.xpath(
+            '//table[@id="ctl00_LocatorPublicPageContent_gvGridView"]//tr'
+        )
         for row in rows:
-            if len(row.xpath('./td')) == 0:
+            if len(row.xpath("./td")) == 0:
                 continue
 
-            text = u''.join(row.xpath('.//text()')).strip()
+            text = u"".join(row.xpath(".//text()")).strip()
             if "Next Page" in text:
                 continue
             if "Previous Page" in text:
@@ -72,18 +81,18 @@ class Search(BaseStateSearch):
             if re.search("Page \d+ of \d+", text):
                 continue
 
-            name = "".join(row.xpath('(./td)[1]//text()'))
+            name = "".join(row.xpath("(./td)[1]//text()"))
             if not name:
                 self.errors.append(text)
                 continue
 
-            numbers = {"CDCR": "".join(row.xpath('(./td)[2]/text()'))}
-            current_location = ''.join(row.xpath('(./td)[5]/a/text()')).strip()
-            current_location_url = ''.join(row.xpath('(./td)[5]/a/@href')).strip()
+            numbers = {"CDCR": "".join(row.xpath("(./td)[2]/text()"))}
+            current_location = "".join(row.xpath("(./td)[5]/a/text()")).strip()
+            current_location_url = "".join(row.xpath("(./td)[5]/a/@href")).strip()
             extra = {
-                'age': "".join(row.xpath('(./td)[3]/text()')),
-                'admission_date': ''.join(row.xpath('(./td)[4]/text()')),
-                'map_url': ''.join(row.xpath('(./td)[6]/a/@href')),
+                "age": "".join(row.xpath("(./td)[3]/text()")),
+                "admission_date": "".join(row.xpath("(./td)[4]/text()")),
+                "map_url": "".join(row.xpath("(./td)[6]/a/@href")),
             }
 
             result = self.add_result(
@@ -93,6 +102,8 @@ class Search(BaseStateSearch):
                 status=self.STATUS_INCARCERATED,
                 raw_facility_name=current_location,
                 facility_url=current_location_url,
-                facilities=Facility.objects.find_by_name("California", current_location),
+                facilities=Facility.objects.find_by_name(
+                    "California", current_location
+                ),
                 extra=extra,
             )
