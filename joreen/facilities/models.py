@@ -1,7 +1,6 @@
 from django.db import models
 from django.db.models import Q
 from localflavor.us.models import USPostalCodeField, USZipCodeField
-from phonenumber_field.modelfields import PhoneNumberField
 
 
 class FacilityType(models.Model):
@@ -63,7 +62,7 @@ class Facility(models.Model):
     city = models.CharField(max_length=255)
     state = USPostalCodeField()
     zip = USZipCodeField()
-    phone = PhoneNumberField(blank=True, max_length=255)
+    phone = models.CharField(blank=True, max_length=255)
     general = models.BooleanField(
         default=False,
         help_text="Is this address a 'general mail' address for facilities with"

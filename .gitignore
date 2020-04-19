@@ -11,3 +11,6 @@ frontend/bower_components
 frontend/node_modules
 .cache
 ansible/*.retry
+celerybeat-schedule
+node_modules
+yarn-error.log

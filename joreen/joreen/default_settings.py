@@ -19,13 +19,17 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-    "facilities",
-    "stateparsers",
-    "blackandpink",
     "api",
+    "blackandpink",
+    "facilities",
+    "frontend",
+    "stateparsers",
+    # Third party
     "django_celery_beat",
     "django_celery_results",
     "localflavor",
+    "webpack_loader",
+    # Django
     "django.contrib.contenttypes",
     "django.contrib.admin",
     "django.contrib.auth",

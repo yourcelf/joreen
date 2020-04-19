@@ -10,4 +10,5 @@ urlpatterns = [
     url(r"^account/", include("django.contrib.auth.urls")),
     url(r"^api/", include("api.urls")),
     url(r"^blackandpink/", include("blackandpink.urls")),
+    url(r"", include("frontend.urls")),
 ]

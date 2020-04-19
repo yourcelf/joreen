@@ -1,0 +1,40 @@
+{
+  "name": "joreen",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "webpack/build_prod_assets.sh",
+    "build:dev": "yarn run clean:dev && NODE_ENV=development webpack --config webpack/config.dev.js",
+    "clean": "rimraf static/dist static/tmp",
+    "clean:dev": "rimraf static/dev/*"
+  },
+  "dependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.5",
+    "@babel/preset-react": "^7.9.4",
+    "@fullhuman/postcss-purgecss": "^2.1.2",
+    "autoprefixer": "^9.7.6",
+    "babel-loader": "^8.1.0",
+    "core-js": "^3.6.5",
+    "css-loader": "^3.5.2",
+    "cssnano": "^4.1.10",
+    "file-loader": "^6.0.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "node-sass": "^4.13.1",
+    "postcss-loader": "^3.0.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "sass-loader": "^8.0.2",
+    "tailwindcss": "^1.2.0",
+    "webpack": "^4.42.1",
+    "webpack-bundle-tracker": "^0.4.3",
+    "webpack-dev-server": "^3.10.3"
+  },
+  "devDependencies": {
+    "prettier": "^2.0.4",
+    "rimraf": "^3.0.2",
+    "webpack-cli": "^3.3.11"
+  }
+}

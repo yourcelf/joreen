@@ -1,6 +1,5 @@
 from django.db import migrations, models
 import localflavor.us.models
-import phonenumber_field.modelfields
 
 
 class Migration(migrations.Migration):
@@ -189,12 +188,7 @@ class Migration(migrations.Migration):
                         max_length=2,
                     ),
                 ),
-                (
-                    "phone",
-                    phonenumber_field.modelfields.PhoneNumberField(
-                        blank=True, max_length=20
-                    ),
-                ),
+                ("phone", models.CharField(blank=True, max_length=20)),
                 ("provenance", models.CharField(max_length=255)),
                 ("provenance_url", models.CharField(max_length=255)),
                 ("modified", models.DateTimeField(auto_now=True)),

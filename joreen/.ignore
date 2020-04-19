@@ -1,0 +1,15 @@
+static/dist
+static/dev
+static/tmp
+static/img
+static/502.html
+static/vendor/
+media/
+**/*.svg
+node_modules
+public
+private_media/
+.cache
+.pytest_cache
+__pycache__
+geckodriver.log
