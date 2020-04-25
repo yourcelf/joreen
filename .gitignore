@@ -4,7 +4,10 @@ __pycache__
 venv
 db.sqlite3*
 joreen/cache/*
-joreen/static
+joreen/public
+joreen/static/dist
+joreen/static/dev
+joreen/static/tmp
 !joreen/cache/.keep
 settings.py
 frontend/bower_components
